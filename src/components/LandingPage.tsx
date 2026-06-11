@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ArrowRight, Check, Zap, Target, Copy, Star } from "lucide-react";
+import { Sparkles, ArrowRight, Check, Zap, Target, Copy, Star, Link } from "lucide-react";
 
 const PLACEHOLDERS = [
   "instagram.com/reel/...",
