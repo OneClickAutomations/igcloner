@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Link, Sparkles, Copy, Check, Save, Loader2, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { analyzeInstagramPost } from "@/lib/analyze.functions";
 
 const PLACEHOLDERS = [
   "instagram.com/reel/...",
@@ -22,6 +24,7 @@ function detectPostType(url: string): string | null {
 
 export function AppPage() {
   const navigate = useNavigate();
+  const analyzeFn = useServerFn(analyzeInstagramPost);
   const [url, setUrl] = useState("");
   const [postType, setPostType] = useState<string | null>(null);
   const [phase, setPhase] = useState<"input" | "analyzing" | "results">("input");
@@ -66,24 +69,44 @@ export function AppPage() {
     setProgress(0);
     setStepLabel("Detecting post type...");
 
-    // Simulate analysis steps
+    // Animate progress while the real request runs
     const steps = [
       { pct: 15, label: "Detecting post type..." },
-      { pct: 35, label: "Extracting caption..." },
+      { pct: 35, label: "Scraping Instagram post..." },
       { pct: 55, label: "Analyzing hook structure..." },
       { pct: 75, label: "Deconstructing content DNA..." },
       { pct: 90, label: "Generating clone versions..." },
-      { pct: 100, label: "Complete" },
     ];
+    let stepIdx = 0;
+    const progressTimer = setInterval(() => {
+      if (stepIdx < steps.length) {
+        setProgress(steps[stepIdx].pct);
+        setStepLabel(steps[stepIdx].label);
+        stepIdx++;
+      }
+    }, 1500);
 
-    for (const step of steps) {
-      await new Promise((r) => setTimeout(r, 1200));
-      setProgress(step.pct);
-      setStepLabel(step.label);
+    try {
+      const result = await analyzeFn({ data: { url } });
+      clearInterval(progressTimer);
+      setProgress(100);
+      setStepLabel("Complete");
+      setDna(result.dna);
+      setClones(result.clones);
+      setPhase("results");
+      setCredits((c) => c - 1);
+      toast.success("Analysis complete");
+    } catch (err: any) {
+      clearInterval(progressTimer);
+      console.error(err);
+      toast.error(err?.message || "Analysis failed. Please try again.");
+      setPhase("input");
     }
+    return;
 
-    // Mock DNA result
-    const mockDna = {
+    // unreachable mock fallback (kept temporarily — remove later)
+    // eslint-disable-next-line no-unreachable
+    const _mockDna = {
       contentSummary: "A fitness coach breaks down the exact morning routine that helped them gain 50K followers in 3 months. Combines quick cuts, text overlays, and personal storytelling.",
       contentCategory: "Educational",
       performanceScore: 87,
