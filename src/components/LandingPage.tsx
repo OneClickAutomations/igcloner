@@ -182,7 +182,7 @@ export function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link to="/auth" className="mt-6 block">
+                <a href="/auth" className="mt-6 block">
                   <Button className="w-full" variant={plan.popular ? "default" : "outline"}>
                     {plan.cta}
                   </Button>
