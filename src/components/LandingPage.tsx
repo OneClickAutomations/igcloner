@@ -35,15 +35,15 @@ export function LandingPage() {
           <a href="#pricing" className="hidden text-sm text-muted-foreground hover:text-foreground sm:block">
             Pricing
           </a>
-          <Link to="/auth">
+          <a href="/auth">
             <Button variant="ghost" size="sm">Log In</Button>
-          </Link>
-          <Link to="/auth">
+          </a>
+          <a href="/auth">
             <Button size="sm" className="gap-1">
               <Sparkles className="h-3.5 w-3.5" />
               Try For Free
             </Button>
-          </Link>
+          </a>
         </div>
       </nav>
 
@@ -72,12 +72,12 @@ export function LandingPage() {
                 placeholder={PLACEHOLDERS[placeholderIndex]}
                 className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
               />
-              <Link to="/auth">
+              <a href="/auth">
                 <Button className="shrink-0 gap-1.5">
                   <Sparkles className="h-4 w-4" />
                   Analyze
                 </Button>
-              </Link>
+              </a>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               No account needed to preview · 3 free analyses
@@ -186,7 +186,7 @@ export function LandingPage() {
                   <Button className="w-full" variant={plan.popular ? "default" : "outline"}>
                     {plan.cta}
                   </Button>
-                </Link>
+                </a>
               </div>
             ))}
           </div>
@@ -198,12 +198,12 @@ export function LandingPage() {
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to clone smarter?</h2>
           <p className="text-muted-foreground mb-8">Start with 3 free analyses. No credit card required.</p>
-          <Link to="/auth">
+          <a href="/auth">
             <Button size="lg" className="gap-2">
               <Sparkles className="h-4 w-4" />
               Try IGCloner Free
             </Button>
-          </Link>
+          </a>
         </div>
       </section>
 
