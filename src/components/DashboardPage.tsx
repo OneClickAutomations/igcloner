@@ -123,7 +123,7 @@ export function DashboardPage() {
                   <span className="font-mono text-xs font-bold text-accent-primary">{a.performance_score || 0}</span>
                 </div>
                 <p className="text-sm font-medium truncate mb-1">@{a.source_account || "unknown"}</p>
-                <p className="text-xs text-muted-foreground mb-3">{new Date(a.created_at).toLocaleDateString()}</p>
+                <p className="text-xs text-muted-foreground mb-3">{a.created_at ? new Date(a.created_at).toLocaleDateString() : "—"}</p>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => navigate({ to: "/app" })}>
                     <ExternalLink className="h-3 w-3" />
