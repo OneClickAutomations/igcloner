@@ -1,12 +1,17 @@
-import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Link, Sparkles, Copy, Check, Save, Loader2, Link2 } from "lucide-react";
+import { Sparkles, Copy, Check, Loader2, Link2, AlertCircle, Wand2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { analyzeInstagramPost } from "@/lib/analyze.functions";
+import {
+  analyzeInstagramPost,
+  getAnalysisById,
+  getUsage,
+  makeItBetter,
+} from "@/lib/analyze.functions";
 
 const PLACEHOLDERS = [
   "instagram.com/reel/...",
