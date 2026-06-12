@@ -413,7 +413,7 @@ export function AppPage() {
         )}
 
         {phase === "results" && dna && (
-          <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <div className={captionFlowOpen ? "grid gap-6 lg:grid-cols-[1.4fr_1fr]" : "grid gap-6"}>
             {/* LEFT: DNA Panel */}
             <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">
@@ -452,15 +452,26 @@ export function AppPage() {
               {/* Channel intelligence header (media + account intel) */}
               <ChannelIntelHeader scraped={scraped} dna={dna} url={instagramUrl || url} />
 
-              {/* Content Formula summary — dual CTAs jump into Studio with mode pre-picked */}
+              {/* Content Formula summary (read-only forensics overview) */}
               <ContentFormulaCard
                 dna={dna}
                 scraped={scraped}
                 postType={(dna as any)?.postType ?? "Post"}
-                onPick={(mode) =>
-                  analysisId &&
-                  navigate({ to: "/studio", search: { analysisId, mode } } as any)
-                }
+                onPick={() => {}}
+              />
+
+              {/* NEW FLOW: pick format → set preferences → open studio */}
+              <PostAnalysisFlow
+                analysisId={analysisId}
+                postType={dna?.postType}
+                onCaptionSelected={() => {
+                  setCaptionFlowOpen(true);
+                  setShowPreferences(true);
+                  setRightTab("clones");
+                  setTimeout(() => {
+                    document.getElementById("caption-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 50);
+                }}
               />
 
               {/* Viral score + Go/Skip recommendation */}
@@ -634,9 +645,23 @@ export function AppPage() {
               </DNA_card>
             </div>
 
-            {/* RIGHT: Clone Engine Panel */}
-            <div className="lg:sticky lg:top-6 lg:self-start space-y-4">
+            {/* RIGHT: Clone Engine Panel — only when Caption Only is picked */}
+            {captionFlowOpen && (
+            <div id="caption-panel" className="lg:sticky lg:top-6 lg:self-start space-y-4">
               <div className="rounded-xl border border-border bg-card p-5">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-accent-primary">Caption Studio</div>
+                    <h3 className="text-sm font-semibold">Generate captions, hooks &amp; variations</h3>
+                  </div>
+                  <button
+                    onClick={() => setCaptionFlowOpen(false)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Close caption studio"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
                 <div className="flex gap-1 rounded-lg bg-muted p-1 text-xs font-medium">
                   {[
                     { key: "clones", label: "Clones" },
