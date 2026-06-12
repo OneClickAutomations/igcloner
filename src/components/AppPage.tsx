@@ -139,6 +139,11 @@ export function AppPage() {
     try {
       const result = await analyzeFn({ data: { url } });
       clearInterval(progressTimer);
+      if (!result) {
+        toast.error("Analysis failed. Please try again.");
+        setPhase("input");
+        return;
+      }
       if ((result as any).limitReached) {
         setShowUpgrade(true);
         setPhase("input");
