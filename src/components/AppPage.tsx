@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Sparkles, Copy, Check, Loader2, Link2, AlertCircle, Wand2, X, Zap, Shuffle, Send, Plus, Rocket } from "lucide-react";
 import { ContentFormulaCard } from "@/components/ContentFormulaCard";
+import { PostAnalysisFlow } from "@/components/PostAnalysisFlow";
 import { useServerFn } from "@tanstack/react-start";
 import {
   analyzeInstagramPost,
@@ -87,6 +88,7 @@ export function AppPage() {
   const [visualsLoading, setVisualsLoading] = useState(false);
   const [visualsMap, setVisualsMap] = useState<Record<number, { format: string; images: string[]; script: string | null }>>({});
   const [viral, setViral] = useState<ViralScoreResult | null>(null);
+  const [captionFlowOpen, setCaptionFlowOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
@@ -198,6 +200,7 @@ export function AppPage() {
       setFallbackMode(Boolean(payload?.fallback));
       setPhase("results");
       setShowPreferences(true);
+      setCaptionFlowOpen(false);
       setActivePreferences(null);
       toast.success("Saved to your dashboard");
       refreshUsage();
