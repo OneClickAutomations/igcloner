@@ -397,3 +397,276 @@ Return:
 
     return { improved };
   });
+
+// ============================================================
+// Hook Lab — generate 10 hook variations for an analysis
+// ============================================================
+
+const HOOK_LAB_SYSTEM = `You are a viral hook writer. Generate 10 distinct opening hooks for short-form content. Each hook must use a different psychological pattern. Return ONLY a JSON array.`;
+
+export const generateHooks = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ analysisId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: analysis } = await supabase
+      .from("analyses")
+      .select("dna_analysis, source_caption")
+      .eq("id", data.analysisId)
+      .eq("user_id", userId)
+      .single();
+    if (!analysis) throw new Error("Analysis not found");
+    const dna: any = analysis.dna_analysis;
+
+    const user = `Generate 10 hook variations for this content topic.
+
+Topic / category: ${dna?.contentCategory}
+Original hook style: ${dna?.hookBreakdown?.type}
+Target audience: ${dna?.targetAudience?.who} — wants ${dna?.targetAudience?.desire}
+Source summary: ${dna?.contentSummary}
+
+Return a JSON array of 10 objects with this shape:
+[
+  { "type": "Question | Shocking Stat | Bold Claim | Pattern Interrupt | Story Open | Curiosity Gap | FOMO | Contrarian | Listicle | Confession", "text": "the hook (1–2 sentences)", "why": "one line — why it works" }
+]
+Each hook must use a different type. Be punchy and specific. No emojis at the start.`;
+
+    const text = await callClaude({ system: HOOK_LAB_SYSTEM, user, maxTokens: 2500 });
+    const hooks = parseJsonish<any[]>(text);
+
+    // Persist as multiplied_content rows for history
+    if (Array.isArray(hooks) && hooks.length > 0) {
+      const rows = hooks.map((h: any) => ({
+        analysis_id: data.analysisId,
+        user_id: userId,
+        format: "hook",
+        content: JSON.stringify(h),
+      }));
+      await supabase.from("multiplied_content").insert(rows);
+    }
+
+    return { hooks };
+  });
+
+// ============================================================
+// Content Multiplier — repurpose into Tweet / LinkedIn / YouTube / Blog
+// ============================================================
+
+const MULTIPLY_FORMATS = ["tweet", "twitter_thread", "linkedin", "youtube", "blog"] as const;
+type MultiplyFormat = (typeof MULTIPLY_FORMATS)[number];
+
+const MULTIPLY_SYSTEM = `You are a multi-platform content strategist. Repurpose Instagram content into other formats while preserving the core insight. Match the native voice and best practices of each platform. Return ONLY valid JSON.`;
+
+function multiplyPrompt(format: MultiplyFormat, dna: any, clone: any | null): string {
+  const base = `Source insight:
+Hook: ${clone?.hook ?? dna?.hookBreakdown?.whatWorks}
+Caption: ${clone?.caption ?? dna?.contentSummary}
+Category: ${dna?.contentCategory}
+Audience: ${dna?.targetAudience?.who}
+`;
+  switch (format) {
+    case "tweet":
+      return `${base}
+Write a single high-performance tweet under 280 characters. Punchy, no hashtags, no emojis at the start.
+Return: { "format": "tweet", "content": "..." }`;
+    case "twitter_thread":
+      return `${base}
+Write a 7–9 tweet thread. Tweet 1 hooks hard. Each tweet under 280 chars, numbered "1/", "2/", etc. Last tweet has a soft CTA.
+Return: { "format": "twitter_thread", "content": "full thread as one string, tweets separated by \\n\\n" }`;
+    case "linkedin":
+      return `${base}
+Write a LinkedIn post (180–250 words). Professional, story-driven, line breaks every 1–2 sentences, no hashtags inline, ends with a question.
+Return: { "format": "linkedin", "content": "..." }`;
+    case "youtube":
+      return `${base}
+Write a YouTube video script outline for a 5–7 minute video. Include: title (curiosity-driven, <60 chars), thumbnail concept, hook (first 15s), 4–6 section beats, CTA.
+Return: { "format": "youtube", "content": "the full outline as markdown" }`;
+    case "blog":
+      return `${base}
+Write an SEO-friendly blog outline. Include: title (<60 chars), meta description (<160 chars), 5–7 H2 sections with one-line summaries, target keyword.
+Return: { "format": "blog", "content": "the full outline as markdown" }`;
+  }
+}
+
+export const multiplyContent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        analysisId: z.string().uuid(),
+        format: z.enum(MULTIPLY_FORMATS),
+        versionNumber: z.number().int().min(1).max(5).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: analysis } = await supabase
+      .from("analyses")
+      .select("dna_analysis")
+      .eq("id", data.analysisId)
+      .eq("user_id", userId)
+      .single();
+    if (!analysis) throw new Error("Analysis not found");
+
+    let clone: any = null;
+    if (data.versionNumber) {
+      const { data: c } = await supabase
+        .from("clones")
+        .select("hook, caption, cta")
+        .eq("analysis_id", data.analysisId)
+        .eq("version_number", data.versionNumber)
+        .eq("user_id", userId)
+        .single();
+      clone = c;
+    }
+
+    const prompt = multiplyPrompt(data.format, analysis.dna_analysis, clone);
+    const text = await callClaude({ system: MULTIPLY_SYSTEM, user: prompt, maxTokens: 2500 });
+    const parsed = parseJsonish<{ format: string; content: string }>(text);
+
+    const { data: row, error } = await supabase
+      .from("multiplied_content")
+      .insert({
+        analysis_id: data.analysisId,
+        user_id: userId,
+        format: data.format,
+        content: parsed.content,
+      })
+      .select()
+      .single();
+    if (error) throw new Error("Failed to save multiplied content");
+
+    return { id: row.id, format: data.format, content: parsed.content };
+  });
+
+// ============================================================
+// Content Calendar — 30-day plan
+// ============================================================
+
+const CALENDAR_SYSTEM = `You are an Instagram content planner. Build a 30-day posting calendar tailored to the user's niche. Vary post types and hook patterns. Return ONLY a JSON array.`;
+
+export const generateCalendar = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        niche: z.string().min(2).max(120),
+        days: z.number().int().min(7).max(60).default(30),
+        startDate: z.string().optional(), // ISO YYYY-MM-DD
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const prompt = `Build a ${data.days}-day Instagram content calendar for someone in the niche: "${data.niche}".
+
+Return a JSON array of exactly ${data.days} items. Each item:
+{
+  "dayOffset": 0-based integer (0 = day 1),
+  "postType": "Reel | Carousel | Post | Story",
+  "hook": "one-line hook",
+  "caption": "2–4 sentence caption preview",
+  "visualIdea": "one-line visual / format direction"
+}
+
+Rules:
+- Mix post types: ~50% Reels, ~30% Carousels, ~20% Posts.
+- Vary hook patterns (question, contrarian, story, listicle, stat).
+- Cluster similar themes loosely, but no two identical hooks.
+- No emojis at the start of hooks.`;
+
+    const text = await callClaude({ system: CALENDAR_SYSTEM, user: prompt, maxTokens: 8000 });
+    const items = parseJsonish<any[]>(text);
+    if (!Array.isArray(items) || items.length === 0) throw new Error("Empty calendar response");
+
+    const start = data.startDate ? new Date(data.startDate) : new Date();
+    start.setHours(0, 0, 0, 0);
+
+    // Replace any existing future calendar for this user
+    const startIso = start.toISOString().slice(0, 10);
+    await supabase
+      .from("calendar_items")
+      .delete()
+      .eq("user_id", userId)
+      .gte("scheduled_for", startIso);
+
+    const rows = items.map((it: any) => {
+      const offset = Number.isFinite(it.dayOffset) ? Number(it.dayOffset) : 0;
+      const d = new Date(start);
+      d.setDate(d.getDate() + offset);
+      return {
+        user_id: userId,
+        niche: data.niche,
+        scheduled_for: d.toISOString().slice(0, 10),
+        post_type: it.postType ?? null,
+        hook: it.hook ?? null,
+        caption: it.caption ?? null,
+        visual_idea: it.visualIdea ?? null,
+        status: "planned",
+      };
+    });
+
+    const { error } = await supabase.from("calendar_items").insert(rows);
+    if (error) throw new Error("Failed to save calendar");
+
+    return { count: rows.length, startDate: startIso };
+  });
+
+export const listCalendarItems = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data, error } = await supabase
+      .from("calendar_items")
+      .select("*")
+      .eq("user_id", userId)
+      .order("scheduled_for", { ascending: true });
+    if (error) throw new Error("Failed to load calendar");
+    return { items: data ?? [] };
+  });
+
+export const updateCalendarItem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        status: z.enum(["planned", "drafted", "scheduled", "posted"]).optional(),
+        hook: z.string().max(500).optional(),
+        caption: z.string().max(4000).optional(),
+        visual_idea: z.string().max(1000).optional(),
+        scheduled_for: z.string().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { id, ...patch } = data;
+    const { error } = await supabase
+      .from("calendar_items")
+      .update(patch)
+      .eq("id", id)
+      .eq("user_id", userId);
+    if (error) throw new Error("Failed to update");
+    return { ok: true };
+  });
+
+export const deleteCalendarItem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("calendar_items")
+      .delete()
+      .eq("id", data.id)
+      .eq("user_id", userId);
+    if (error) throw new Error("Failed to delete");
+    return { ok: true };
+  });
