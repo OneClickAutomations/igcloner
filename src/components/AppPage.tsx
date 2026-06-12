@@ -551,8 +551,27 @@ export function AppPage() {
                 </div>
 
                 {rightTab === "clones" && (<>
-                <h2 className="mt-4 text-lg font-bold">Your Content Clones</h2>
-                <p className="text-sm text-muted-foreground">5 original versions. Same strategy. Your voice.</p>
+                {showPreferences ? (
+                  <div className="mt-4">
+                    <PreferencePanel onSubmit={handleGeneratePreferences} loading={regenerating} />
+                  </div>
+                ) : (
+                <>
+                <div className="mt-4 flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-bold">Your Content Clones</h2>
+                    {activePreferences ? (
+                      <p className="text-sm text-text-secondary">
+                        Tailored for <span className="font-semibold text-foreground">{activePreferences.niche}</span> · {activePreferences.toneOfVoice}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">5 original versions. Same strategy. Your voice.</p>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" className="text-accent-primary" onClick={() => setShowPreferences(true)}>
+                    <Sparkles className="h-3.5 w-3.5" /> Re-tune
+                  </Button>
+                </div>
 
                 <div className="mt-4 flex gap-1 overflow-x-auto pb-1">
                   {clones.map((c, i) => (
@@ -565,7 +584,7 @@ export function AppPage() {
                           : "bg-muted text-muted-foreground hover:bg-muted/80"
                       }`}
                     >
-                      V{c.versionNumber}{c.improved ? " ✦" : ""}
+                      {c.angleLabel ? c.angleLabel.split(" ").slice(0, 2).join(" ") : `V${c.versionNumber}`}{c.improved ? " ✦" : ""}
                     </button>
                   ))}
                 </div>
@@ -607,8 +626,23 @@ export function AppPage() {
                         {improving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
                         Make It Better
                       </Button>
+                      <Button
+                        size="sm"
+                        className="ml-auto gap-1.5 gradient-accent text-white border-0 hover:opacity-95"
+                        onClick={() => setPostModal({
+                          versionNumber: clones[activeVersion].versionNumber,
+                          angleLabel: clones[activeVersion].angleLabel,
+                          hook: clones[activeVersion].hook,
+                          caption: clones[activeVersion].caption,
+                          cta: clones[activeVersion].cta,
+                        })}
+                      >
+                        <Send className="h-3.5 w-3.5" /> Post This
+                      </Button>
                     </div>
                   </div>
+                )}
+                </>
                 )}
                 </>)}
 
@@ -704,6 +738,14 @@ export function AppPage() {
 
       {showUpgrade && (
         <UpgradeModal onClose={() => setShowUpgrade(false)} onUpgrade={() => { setShowUpgrade(false); navigate({ to: "/settings" }); }} />
+      )}
+      {postModal && (
+        <PostThisModal
+          clone={postModal}
+          niche={activePreferences?.niche}
+          postType={dna?.postType}
+          onClose={() => setPostModal(null)}
+        />
       )}
     </div>
   );
