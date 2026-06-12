@@ -157,8 +157,32 @@ export function AppPage() {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const handleSave = async () => {
-    toast.success("Analysis saved!");
+  const handleMakeBetter = async () => {
+    if (!analysisId || !clones[activeVersion]) return;
+    setImproving(true);
+    try {
+      const versionNumber = clones[activeVersion].versionNumber;
+      const res = await improveFn({ data: { analysisId, versionNumber } });
+      const imp = res.improved;
+      setClones((prev) => prev.map((c, i) =>
+        i === activeVersion
+          ? { ...c, hook: imp.improvedHook, caption: imp.improvedCaption, cta: imp.improvedCta, improved: true }
+          : c,
+      ));
+      setImprovedMap((m) => ({
+        ...m,
+        [versionNumber]: {
+          improvements: imp.improvements || [],
+          shareabilityScore: imp.shareabilityScore ?? 0,
+          savePotentialScore: imp.savePotentialScore ?? 0,
+        },
+      }));
+      toast.success("Upgraded");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't improve this version");
+    } finally {
+      setImproving(false);
+    }
   };
 
   const emotionColor = (key: string) => {
@@ -184,9 +208,11 @@ export function AppPage() {
           <span className="text-lg font-bold tracking-tight">IGCloner</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground sm:flex">
-            {credits} analyses left
-          </div>
+          {usage && (
+            <div className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground sm:flex">
+              {usage.remaining} / {usage.limit} left
+            </div>
+          )}
           <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/dashboard" })}>
             History
           </Button>
@@ -238,9 +264,11 @@ export function AppPage() {
               )}
             </div>
 
-            <p className="mt-6 text-sm text-muted-foreground">
-              You have <span className="font-medium text-foreground">{credits}</span> analyses remaining
-            </p>
+            {usage && (
+              <p className="mt-6 text-sm text-muted-foreground">
+                You have <span className="font-medium text-foreground">{usage.remaining}</span> of <span className="font-medium text-foreground">{usage.limit}</span> remaining
+              </p>
+            )}
           </div>
         )}
 
