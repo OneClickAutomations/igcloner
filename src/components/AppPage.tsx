@@ -29,7 +29,11 @@ function detectPostType(url: string): string | null {
 
 export function AppPage() {
   const navigate = useNavigate();
+  const search = useSearch({ from: "/_authenticated/app" });
   const analyzeFn = useServerFn(analyzeInstagramPost);
+  const loadFn = useServerFn(getAnalysisById);
+  const usageFn = useServerFn(getUsage);
+  const improveFn = useServerFn(makeItBetter);
   const [url, setUrl] = useState("");
   const [postType, setPostType] = useState<string | null>(null);
   const [phase, setPhase] = useState<"input" | "analyzing" | "results">("input");
@@ -39,14 +43,22 @@ export function AppPage() {
   const [clones, setClones] = useState<any[]>([]);
   const [activeVersion, setActiveVersion] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [credits, setCredits] = useState(12);
-  const [user, setUser] = useState<any>(null);
+  const [usage, setUsage] = useState<{ used: number; limit: number; remaining: number; plan: string } | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [dismissedWarning, setDismissedWarning] = useState(false);
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
+  const [savedBadge, setSavedBadge] = useState<string | null>(null);
+  const [fallbackMode, setFallbackMode] = useState(false);
+  const [improving, setImproving] = useState(false);
+  const [improvedMap, setImprovedMap] = useState<Record<number, { improvements: string[]; shareabilityScore: number; savePotentialScore: number }>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-  }, []);
+  const refreshUsage = useCallback(async () => {
+    try { setUsage(await usageFn()); } catch {}
+  }, [usageFn]);
+
+  useEffect(() => { refreshUsage(); }, [refreshUsage]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -59,6 +71,27 @@ export function AppPage() {
     const type = detectPostType(url);
     setPostType(type);
   }, [url]);
+
+  useEffect(() => {
+    const id = (search as any)?.analysisId as string | undefined;
+    if (!id || id === analysisId) return;
+    (async () => {
+      try {
+        setPhase("analyzing");
+        setProgress(60);
+        setStepLabel("Loading saved analysis...");
+        const res = await loadFn({ data: { id } });
+        setDna(res.dna);
+        setClones(res.clones);
+        setAnalysisId(res.analysisId);
+        setSavedBadge(res.createdAt ? new Date(res.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Saved");
+        setPhase("results");
+      } catch (e: any) {
+        toast.error(e?.message || "Couldn't load that analysis");
+        setPhase("input");
+      }
+    })();
+  }, [search, analysisId, loadFn]);
 
   const handleAnalyze = async () => {
     if (!url.includes("instagram.com")) {
