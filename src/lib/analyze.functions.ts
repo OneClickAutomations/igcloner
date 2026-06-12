@@ -175,84 +175,108 @@ export const analyzeInstagramPost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const postType = detectPostType(data.url);
-
-    // Usage gate
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("analyses_used, analyses_limit")
-      .eq("id", userId)
-      .single();
-    if (prof && (prof.analyses_limit ?? 0) - (prof.analyses_used ?? 0) <= 0) {
-      return { limitReached: true as const };
-    }
-
-    // Scrape (graceful fallback if APIFY missing/private)
-    let scraped: ScrapedPost | null = null;
-    let fallback = false;
+    console.log("[analyze] start", { url: data.url });
     try {
-      scraped = await scrapeInstagram(data.url);
-    } catch (e) {
-      console.warn("[Apify] fallback:", (e as Error).message);
-      fallback = true;
-    }
+      const { supabase, userId } = context;
+      const postType = detectPostType(data.url);
 
-    const dna = await analyzeDNA(scraped, data.url, postType);
-    const clones = await generateCloneSet(dna);
-
-    // Persist
-    const { data: analysis, error: aErr } = await supabase
-      .from("analyses")
-      .insert({
-        user_id: userId,
-        instagram_url: data.url,
-        post_type: postType,
-        source_account: scraped?.ownerUsername ?? null,
-        source_caption: scraped?.caption ?? null,
-        performance_score: dna?.performanceScore ?? null,
-        scraped_data: (scraped ?? null) as any,
-        dna_analysis: dna as any,
-      })
-      .select()
-      .single();
-
-    if (aErr) {
-      console.error("[DB] analysis insert error:", aErr);
-      throw new Error("Failed to save analysis");
-    }
-
-    if (clones.length > 0) {
-      const cloneRows = clones.map((c: any) => ({
-        analysis_id: analysis.id,
-        user_id: userId,
-        version_number: c.versionNumber,
-        angle_type: c.angleType,
-        angle: c.angle,
-        hook: c.hook,
-        story_structure: c.storyStructure,
-        caption: c.caption,
-        visual_direction: c.visualDirection,
-        cta: c.cta,
-      }));
-      const { error: cErr } = await supabase.from("clones").insert(cloneRows);
-      if (cErr) console.error("[DB] clones insert error:", cErr);
-    }
-
-    // Increment usage
-    if (prof) {
-      await supabase
+      // Usage gate
+      const { data: prof, error: profErr } = await supabase
         .from("profiles")
-        .update({ analyses_used: (prof.analyses_used ?? 0) + 1 })
-        .eq("id", userId);
-    }
+        .select("analyses_used, analyses_limit")
+        .eq("id", userId)
+        .single();
+      if (profErr) console.error("[analyze] profile fetch error:", profErr);
+      if (prof && (prof.analyses_limit ?? 0) - (prof.analyses_used ?? 0) <= 0) {
+        console.log("[analyze] limit reached", prof);
+        return { ok: false as const, limitReached: true as const, error: null, data: null };
+      }
 
-    return {
-      analysisId: analysis.id,
-      dna: { ...dna, sourceAccount: scraped?.ownerUsername ?? null, postType },
-      clones,
-      fallback,
-    };
+      // Scrape (graceful fallback if APIFY missing/private)
+      let scraped: ScrapedPost | null = null;
+      let fallback = false;
+      try {
+        console.log("[analyze] scraping…");
+        scraped = await scrapeInstagram(data.url);
+        console.log("[analyze] scrape ok", { owner: scraped?.ownerUsername });
+      } catch (e) {
+        console.warn("[analyze] scrape fallback:", (e as Error).message);
+        fallback = true;
+      }
+
+      console.log("[analyze] DNA analysis…");
+      const dna = await analyzeDNA(scraped, data.url, postType);
+      console.log("[analyze] generating clones…");
+      const clones = await generateCloneSet(dna);
+      console.log("[analyze] AI complete", { clones: clones?.length ?? 0 });
+
+      // Persist
+      const { data: analysis, error: aErr } = await supabase
+        .from("analyses")
+        .insert({
+          user_id: userId,
+          instagram_url: data.url,
+          post_type: postType,
+          source_account: scraped?.ownerUsername ?? null,
+          source_caption: scraped?.caption ?? null,
+          performance_score: dna?.performanceScore ?? null,
+          scraped_data: (scraped ?? null) as any,
+          dna_analysis: dna as any,
+        })
+        .select()
+        .single();
+
+      if (aErr) {
+        console.error("[analyze] DB insert error:", aErr);
+        return { ok: false as const, limitReached: false as const, error: "Failed to save analysis", data: null };
+      }
+
+      if (clones.length > 0) {
+        const cloneRows = clones.map((c: any) => ({
+          analysis_id: analysis.id,
+          user_id: userId,
+          version_number: c.versionNumber,
+          angle_type: c.angleType,
+          angle: c.angle,
+          hook: c.hook,
+          story_structure: c.storyStructure,
+          caption: c.caption,
+          visual_direction: c.visualDirection,
+          cta: c.cta,
+        }));
+        const { error: cErr } = await supabase.from("clones").insert(cloneRows);
+        if (cErr) console.error("[analyze] clones insert error:", cErr);
+      }
+
+      // Increment usage
+      if (prof) {
+        await supabase
+          .from("profiles")
+          .update({ analyses_used: (prof.analyses_used ?? 0) + 1 })
+          .eq("id", userId);
+      }
+
+      console.log("[analyze] done", { analysisId: analysis.id });
+      return {
+        ok: true as const,
+        limitReached: false as const,
+        error: null,
+        data: {
+          analysisId: analysis.id,
+          dna: { ...dna, sourceAccount: scraped?.ownerUsername ?? null, postType },
+          clones,
+          fallback,
+        },
+      };
+    } catch (err: any) {
+      console.error("[analyze] unhandled error:", err);
+      return {
+        ok: false as const,
+        limitReached: false as const,
+        error: err?.message || "Analysis failed",
+        data: null,
+      };
+    }
   });
 
 export const getAnalysisById = createServerFn({ method: "POST" })
