@@ -2,15 +2,17 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Sparkles, Copy, Check, Loader2, Link2, AlertCircle, Wand2, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Sparkles, Copy, Check, Loader2, Link2, AlertCircle, Wand2, X, Zap, Shuffle } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   analyzeInstagramPost,
   getAnalysisById,
   getUsage,
   makeItBetter,
+  generateHooks,
+  multiplyContent,
 } from "@/lib/analyze.functions";
 
 const PLACEHOLDERS = [
@@ -34,6 +36,8 @@ export function AppPage() {
   const loadFn = useServerFn(getAnalysisById);
   const usageFn = useServerFn(getUsage);
   const improveFn = useServerFn(makeItBetter);
+  const hooksFn = useServerFn(generateHooks);
+  const multiplyFn = useServerFn(multiplyContent);
   const [url, setUrl] = useState("");
   const [postType, setPostType] = useState<string | null>(null);
   const [phase, setPhase] = useState<"input" | "analyzing" | "results">("input");
@@ -51,6 +55,11 @@ export function AppPage() {
   const [fallbackMode, setFallbackMode] = useState(false);
   const [improving, setImproving] = useState(false);
   const [improvedMap, setImprovedMap] = useState<Record<number, { improvements: string[]; shareabilityScore: number; savePotentialScore: number }>>({});
+  const [rightTab, setRightTab] = useState<"clones" | "multiplier" | "hooks">("clones");
+  const [hooks, setHooks] = useState<{ type: string; text: string; why: string }[]>([]);
+  const [hooksLoading, setHooksLoading] = useState(false);
+  const [multiplyLoading, setMultiplyLoading] = useState<string | null>(null);
+  const [multiplied, setMultiplied] = useState<Record<string, string>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
@@ -185,6 +194,33 @@ export function AppPage() {
     }
   };
 
+  const handleGenerateHooks = async () => {
+    if (!analysisId) return;
+    setHooksLoading(true);
+    try {
+      const res = await hooksFn({ data: { analysisId } });
+      setHooks(res.hooks || []);
+    } catch (e: any) {
+      toast.error(e?.message || "Hook Lab failed");
+    } finally {
+      setHooksLoading(false);
+    }
+  };
+
+  const handleMultiply = async (format: "tweet" | "twitter_thread" | "linkedin" | "youtube" | "blog") => {
+    if (!analysisId) return;
+    setMultiplyLoading(format);
+    try {
+      const versionNumber = clones[activeVersion]?.versionNumber;
+      const res = await multiplyFn({ data: { analysisId, format, versionNumber } });
+      setMultiplied((m) => ({ ...m, [format]: res.content }));
+    } catch (e: any) {
+      toast.error(e?.message || "Multiplier failed");
+    } finally {
+      setMultiplyLoading(null);
+    }
+  };
+
   const emotionColor = (key: string) => {
     const map: Record<string, string> = {
       curiosity: "bg-accent-primary",
@@ -198,32 +234,14 @@ export function AppPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Top nav */}
-      <header className="flex h-16 items-center justify-between border-b border-border px-4 lg:px-8">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Sparkles className="h-4 w-4 text-primary-foreground" />
+    <div className="min-h-full">
+      {usage && (
+        <div className="flex items-center justify-end border-b border-border px-4 py-2 lg:px-8">
+          <div className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
+            {usage.remaining} / {usage.limit} left this month
           </div>
-          <span className="text-lg font-bold tracking-tight">IGCloner</span>
         </div>
-        <div className="flex items-center gap-3">
-          {usage && (
-            <div className="hidden rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground sm:flex">
-              {usage.remaining} / {usage.limit} left
-            </div>
-          )}
-          <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/dashboard" })}>
-            History
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/settings" })}>
-            Settings
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => { supabase.auth.signOut(); navigate({ to: "/" }); }}>
-            Sign Out
-          </Button>
-        </div>
-      </header>
+      )}
 
       {usage && usage.remaining > 0 && usage.remaining <= 5 && !dismissedWarning && (
         <div className="flex items-center justify-between gap-3 border-b border-status-warning/30 bg-status-warning/10 px-4 py-2 text-sm text-status-warning lg:px-8">
@@ -232,7 +250,7 @@ export function AppPage() {
         </div>
       )}
 
-      <main className="mx-auto max-w-[1100px] px-4 py-8 lg:py-12">
+      <div className="mx-auto max-w-[1100px] px-4 py-8 lg:py-12">
         {phase === "input" && (
           <div className="flex flex-col items-center justify-center py-20">
             <h1 className="mb-2 text-center text-3xl font-bold tracking-tight sm:text-4xl">
@@ -455,7 +473,26 @@ export function AppPage() {
             {/* RIGHT: Clone Engine Panel */}
             <div className="lg:sticky lg:top-6 lg:self-start space-y-4">
               <div className="rounded-xl border border-border bg-card p-5">
-                <h2 className="text-lg font-bold">Your Content Clones</h2>
+                <div className="flex gap-1 rounded-lg bg-muted p-1 text-xs font-medium">
+                  {[
+                    { key: "clones", label: "Clones" },
+                    { key: "multiplier", label: "Multiplier" },
+                    { key: "hooks", label: "Hook Lab" },
+                  ].map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => setRightTab(t.key as any)}
+                      className={`flex-1 rounded-md px-2 py-1.5 transition-colors ${
+                        rightTab === t.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                {rightTab === "clones" && (<>
+                <h2 className="mt-4 text-lg font-bold">Your Content Clones</h2>
                 <p className="text-sm text-muted-foreground">5 original versions. Same strategy. Your voice.</p>
 
                 <div className="mt-4 flex gap-1 overflow-x-auto pb-1">
@@ -514,11 +551,97 @@ export function AppPage() {
                     </div>
                   </div>
                 )}
+                </>)}
+
+                {rightTab === "multiplier" && (
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <h2 className="text-lg font-bold flex items-center gap-2"><Shuffle className="h-4 w-4 text-accent-primary" /> Content Multiplier</h2>
+                      <p className="text-sm text-muted-foreground">Repurpose the active clone (V{clones[activeVersion]?.versionNumber ?? "—"}) into other platforms.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { key: "tweet", label: "Tweet" },
+                        { key: "twitter_thread", label: "X Thread" },
+                        { key: "linkedin", label: "LinkedIn" },
+                        { key: "youtube", label: "YouTube" },
+                        { key: "blog", label: "Blog" },
+                      ].map((f) => (
+                        <Button
+                          key={f.key}
+                          size="sm"
+                          variant="outline"
+                          className="justify-start gap-2"
+                          disabled={multiplyLoading === f.key || !analysisId}
+                          onClick={() => handleMultiply(f.key as any)}
+                        >
+                          {multiplyLoading === f.key ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+                          {f.label}
+                        </Button>
+                      ))}
+                    </div>
+                    <div className="space-y-3">
+                      {Object.entries(multiplied).map(([format, content]) => (
+                        <div key={format} className="rounded-lg border border-border bg-muted/30 p-3">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{format.replace("_", " ")}</p>
+                            <button onClick={() => handleCopy(content)} className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+                              <Copy className="h-3 w-3" /> Copy
+                            </button>
+                          </div>
+                          <Textarea readOnly value={content} className="min-h-[120px] resize-y bg-background text-xs" />
+                        </div>
+                      ))}
+                      {Object.keys(multiplied).length === 0 && (
+                        <p className="text-center text-xs text-muted-foreground py-6">Pick a format above to generate.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {rightTab === "hooks" && (
+                  <div className="mt-4 space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h2 className="text-lg font-bold flex items-center gap-2"><Wand2 className="h-4 w-4 text-accent-primary" /> Hook Lab</h2>
+                        <p className="text-sm text-muted-foreground">10 hook variations using different patterns.</p>
+                      </div>
+                      <Button size="sm" disabled={hooksLoading || !analysisId} onClick={handleGenerateHooks} className="gap-1.5 shrink-0">
+                        {hooksLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                        {hooks.length > 0 ? "Regenerate" : "Generate"}
+                      </Button>
+                    </div>
+                    {hooksLoading && hooks.length === 0 && (
+                      <div className="space-y-2">
+                        {[0,1,2,3,4].map((i) => <div key={i} className="h-14 animate-pulse rounded-lg bg-muted" />)}
+                      </div>
+                    )}
+                    {hooks.length > 0 && (
+                      <div className="space-y-2">
+                        {hooks.map((h, i) => (
+                          <div key={i} className="group rounded-lg border border-border bg-muted/30 p-3 hover:border-border-strong">
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                              <span className="rounded-md bg-accent-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-accent-primary">{h.type}</span>
+                              <button onClick={() => handleCopy(h.text)} className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1">
+                                <Copy className="h-3 w-3" /> Copy
+                              </button>
+                            </div>
+                            <p className="text-sm text-secondary-foreground">{h.text}</p>
+                            <p className="mt-1 text-[11px] text-muted-foreground italic">{h.why}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {!hooksLoading && hooks.length === 0 && (
+                      <p className="text-center text-xs text-muted-foreground py-6">Generate to see 10 variations.</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       {showUpgrade && (
         <UpgradeModal onClose={() => setShowUpgrade(false)} onUpgrade={() => { setShowUpgrade(false); navigate({ to: "/settings" }); }} />
