@@ -320,6 +320,9 @@ export function AppPage() {
                           {dna.contentCategory}
                         </span>
                         <span>{dna.postType || "Reel"}</span>
+                        {savedBadge && (
+                          <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs">Saved · {savedBadge}</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -328,6 +331,12 @@ export function AppPage() {
                     <div className="text-xs text-muted-foreground">Performance Score</div>
                   </div>
                 </div>
+                {fallbackMode && (
+                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-2 text-xs text-muted-foreground">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    Limited data mode — analysis based on URL pattern.
+                  </div>
+                )}
               </div>
 
               {/* Content Summary */}
