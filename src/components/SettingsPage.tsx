@@ -1,15 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Sparkles, Save, Trash2 } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
 
 export function SettingsPage() {
-  const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,28 +38,8 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="flex h-16 items-center justify-between border-b border-border px-4 lg:px-8">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Sparkles className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="text-lg font-bold tracking-tight">IGCloner</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/app" })}>
-            Analyze
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/dashboard" })}>
-            History
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => { supabase.auth.signOut(); navigate({ to: "/" }); }}>
-            Sign Out
-          </Button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-2xl px-4 py-8 lg:py-12">
+    <div className="min-h-full">
+      <div className="mx-auto max-w-2xl px-4 py-8 lg:py-12">
         <h1 className="text-2xl font-bold mb-6">Settings</h1>
 
         <Tabs defaultValue="account" className="w-full">
@@ -131,7 +109,7 @@ export function SettingsPage() {
             </div>
           </TabsContent>
         </Tabs>
-      </main>
+      </div>
     </div>
   );
 }
