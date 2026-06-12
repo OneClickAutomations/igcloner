@@ -134,13 +134,17 @@ export function AppPage() {
       setStepLabel("Complete");
       setDna(result.dna);
       setClones(result.clones);
+      setAnalysisId(result.analysisId);
+      setFallbackMode(Boolean((result as any).fallback));
       setPhase("results");
-      setCredits((c) => c - 1);
-      toast.success("Analysis complete");
+      toast.success("Saved to your dashboard");
+      refreshUsage();
     } catch (err: any) {
       clearInterval(progressTimer);
+      const msg: string = err?.message || "Analysis failed. Please try again.";
       console.error(err);
-      toast.error(err?.message || "Analysis failed. Please try again.");
+      if (/LIMIT_REACHED/.test(msg)) setShowUpgrade(true);
+      else toast.error(msg);
       setPhase("input");
     }
     return;
