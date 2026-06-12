@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { generateText } from "ai";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+import { computeViralScore } from "@/lib/scoring";
 
 const InputSchema = z.object({
   url: z.string().url().refine((u) => u.includes("instagram.com"), {
