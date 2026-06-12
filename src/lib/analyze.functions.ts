@@ -380,6 +380,8 @@ export const analyzeInstagramPost = createServerFn({ method: "POST" })
           analysisId: analysis.id,
           dna: { ...dna, sourceAccount: scraped?.ownerUsername ?? null, postType },
           clones,
+          scraped: scraped ?? null,
+          instagramUrl: data.url,
           fallback,
         },
       };
