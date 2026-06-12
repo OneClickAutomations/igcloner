@@ -896,6 +896,7 @@ export function AppPage() {
                 )}
               </div>
             </div>
+            )}
           </div>
         )}
       </div>
