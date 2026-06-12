@@ -689,6 +689,40 @@ export function AppPage() {
                         <Send className="h-3.5 w-3.5" /> Post This
                       </Button>
                     </div>
+
+                    {/* Create real visuals */}
+                    <div className="rounded-xl border border-border bg-muted/30 p-3">
+                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-accent-primary">🎨 Create the actual content</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select value={createFormat} onValueChange={(v) => setCreateFormat(v as any)}>
+                          <SelectTrigger className="h-9 w-[160px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="image">Single Image (1:1)</SelectItem>
+                            <SelectItem value="carousel">Carousel (4 slides)</SelectItem>
+                            <SelectItem value="reel">Reel cover + script</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button size="sm" onClick={handleCreateVisuals} disabled={visualsLoading || !analysisId} className="gap-1.5">
+                          {visualsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                          {visualsLoading ? "Creating…" : "Create"}
+                        </Button>
+                      </div>
+                      {visualsMap[clones[activeVersion].versionNumber] && (
+                        <div className="mt-3 space-y-2">
+                          <div className={visualsMap[clones[activeVersion].versionNumber].format === "carousel" ? "grid grid-cols-2 gap-2" : "grid grid-cols-1 gap-2"}>
+                            {visualsMap[clones[activeVersion].versionNumber].images.map((src, i) => (
+                              <a key={i} href={src} download={`igcloner-${clones[activeVersion].versionNumber}-${i + 1}.png`} className="block overflow-hidden rounded-lg border border-border bg-card">
+                                <img src={src} alt={`Generated visual ${i + 1}`} className="block w-full" />
+                              </a>
+                            ))}
+                          </div>
+                          {visualsMap[clones[activeVersion].versionNumber].script && (
+                            <Textarea readOnly value={visualsMap[clones[activeVersion].versionNumber].script!} className="min-h-[140px] resize-y bg-background text-xs" />
+                          )}
+                          <p className="text-[11px] text-muted-foreground">Tap any image to download.</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
                 </>
