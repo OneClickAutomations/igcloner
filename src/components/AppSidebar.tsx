@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Sparkles, Search, LayoutDashboard, Calendar as CalendarIcon, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { Search, LayoutDashboard, Calendar as CalendarIcon, Settings as SettingsIcon, LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -34,10 +34,10 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <Link to="/app" className="flex items-center gap-2 px-2 py-1.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shrink-0">
-            <Sparkles className="h-4 w-4 text-primary-foreground" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-accent shrink-0 shadow-ig">
+            <span className="text-sm font-black text-white">IG</span>
           </div>
-          {!collapsed && <span className="text-base font-bold tracking-tight">IGCloner</span>}
+          {!collapsed && <span className="text-base font-extrabold tracking-tight gradient-text">IGCloner</span>}
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -48,9 +48,16 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                    <Link
+                      to={item.url}
+                      className={`flex items-center gap-2 ${
+                        isActive(item.url)
+                          ? "border-l-[3px] border-accent-secondary bg-accent-primary/5 font-semibold text-foreground"
+                          : ""
+                      }`}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {!collapsed && <span className="text-[15px]">{item.title}</span>}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -63,7 +70,7 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           size="sm"
-          className="justify-start gap-2"
+          className="justify-start gap-2 text-text-secondary"
           onClick={async () => {
             await supabase.auth.signOut();
             navigate({ to: "/" });

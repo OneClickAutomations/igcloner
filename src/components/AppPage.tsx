@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Sparkles, Copy, Check, Loader2, Link2, AlertCircle, Wand2, X, Zap, Shuffle } from "lucide-react";
+import { Sparkles, Copy, Check, Loader2, Link2, AlertCircle, Wand2, X, Zap, Shuffle, Send } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   analyzeInstagramPost,
@@ -13,7 +13,11 @@ import {
   makeItBetter,
   generateHooks,
   multiplyContent,
+  regenerateClonesWithPreferences,
 } from "@/lib/analyze.functions";
+import { ChannelIntelHeader } from "@/components/ChannelIntelHeader";
+import { PreferencePanel, type UserPreferences } from "@/components/PreferencePanel";
+import { PostThisModal, type CloneForPost } from "@/components/PostThisModal";
 
 const PLACEHOLDERS = [
   "instagram.com/reel/...",
@@ -38,6 +42,7 @@ export function AppPage() {
   const improveFn = useServerFn(makeItBetter);
   const hooksFn = useServerFn(generateHooks);
   const multiplyFn = useServerFn(multiplyContent);
+  const regenFn = useServerFn(regenerateClonesWithPreferences);
   const [url, setUrl] = useState("");
   const [postType, setPostType] = useState<string | null>(null);
   const [phase, setPhase] = useState<"input" | "analyzing" | "results">("input");
@@ -60,6 +65,12 @@ export function AppPage() {
   const [hooksLoading, setHooksLoading] = useState(false);
   const [multiplyLoading, setMultiplyLoading] = useState<string | null>(null);
   const [multiplied, setMultiplied] = useState<Record<string, string>>({});
+  const [scraped, setScraped] = useState<any>(null);
+  const [instagramUrl, setInstagramUrl] = useState<string>("");
+  const [showPreferences, setShowPreferences] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
+  const [activePreferences, setActivePreferences] = useState<UserPreferences | null>(null);
+  const [postModal, setPostModal] = useState<CloneForPost | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
@@ -92,6 +103,8 @@ export function AppPage() {
         const res = await loadFn({ data: { id } });
         setDna(res.dna);
         setClones(res.clones);
+        setScraped((res as any).scraped ?? null);
+        setInstagramUrl((res as any).instagramUrl ?? "");
         setAnalysisId(res.analysisId);
         setSavedBadge(res.createdAt ? new Date(res.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Saved");
         setPhase("results");
@@ -161,9 +174,13 @@ export function AppPage() {
       setStepLabel("Complete");
       setDna(payload?.dna ?? null);
       setClones(payload?.clones ?? []);
+      setScraped(payload?.scraped ?? null);
+      setInstagramUrl(payload?.instagramUrl ?? url);
       setAnalysisId(payload?.analysisId ?? null);
       setFallbackMode(Boolean(payload?.fallback));
       setPhase("results");
+      setShowPreferences(true);
+      setActivePreferences(null);
       toast.success("Saved to your dashboard");
       refreshUsage();
     } catch (err: any) {
@@ -209,6 +226,27 @@ export function AppPage() {
       toast.error(e?.message || "Couldn't improve this version");
     } finally {
       setImproving(false);
+    }
+  };
+
+  const handleGeneratePreferences = async (prefs: UserPreferences) => {
+    if (!analysisId) {
+      toast.error("No analysis to attach preferences to");
+      return;
+    }
+    setRegenerating(true);
+    try {
+      const res = await regenFn({ data: { analysisId, preferences: prefs } });
+      setClones(res.clones);
+      setActiveVersion(0);
+      setActivePreferences(prefs);
+      setShowPreferences(false);
+      setRightTab("clones");
+      toast.success(`Generated ${res.clones.length} clones for ${prefs.niche}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't generate tailored clones");
+    } finally {
+      setRegenerating(false);
     }
   };
 
@@ -342,6 +380,9 @@ export function AppPage() {
           <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
             {/* LEFT: DNA Panel */}
             <div className="space-y-4">
+              {/* Channel intelligence header (media + account intel) */}
+              <ChannelIntelHeader scraped={scraped} dna={dna} url={instagramUrl || url} />
+
               {/* Post Header Card */}
               <div className="rounded-xl border border-border bg-card p-5">
                 <div className="flex items-center justify-between">
@@ -510,8 +551,27 @@ export function AppPage() {
                 </div>
 
                 {rightTab === "clones" && (<>
-                <h2 className="mt-4 text-lg font-bold">Your Content Clones</h2>
-                <p className="text-sm text-muted-foreground">5 original versions. Same strategy. Your voice.</p>
+                {showPreferences ? (
+                  <div className="mt-4">
+                    <PreferencePanel onSubmit={handleGeneratePreferences} loading={regenerating} />
+                  </div>
+                ) : (
+                <>
+                <div className="mt-4 flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-bold">Your Content Clones</h2>
+                    {activePreferences ? (
+                      <p className="text-sm text-text-secondary">
+                        Tailored for <span className="font-semibold text-foreground">{activePreferences.niche}</span> · {activePreferences.toneOfVoice}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">5 original versions. Same strategy. Your voice.</p>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" className="text-accent-primary" onClick={() => setShowPreferences(true)}>
+                    <Sparkles className="h-3.5 w-3.5" /> Re-tune
+                  </Button>
+                </div>
 
                 <div className="mt-4 flex gap-1 overflow-x-auto pb-1">
                   {clones.map((c, i) => (
@@ -524,7 +584,7 @@ export function AppPage() {
                           : "bg-muted text-muted-foreground hover:bg-muted/80"
                       }`}
                     >
-                      V{c.versionNumber}{c.improved ? " ✦" : ""}
+                      {c.angleLabel ? c.angleLabel.split(" ").slice(0, 2).join(" ") : `V${c.versionNumber}`}{c.improved ? " ✦" : ""}
                     </button>
                   ))}
                 </div>
@@ -566,8 +626,23 @@ export function AppPage() {
                         {improving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
                         Make It Better
                       </Button>
+                      <Button
+                        size="sm"
+                        className="ml-auto gap-1.5 gradient-accent text-white border-0 hover:opacity-95"
+                        onClick={() => setPostModal({
+                          versionNumber: clones[activeVersion].versionNumber,
+                          angleLabel: clones[activeVersion].angleLabel,
+                          hook: clones[activeVersion].hook,
+                          caption: clones[activeVersion].caption,
+                          cta: clones[activeVersion].cta,
+                        })}
+                      >
+                        <Send className="h-3.5 w-3.5" /> Post This
+                      </Button>
                     </div>
                   </div>
+                )}
+                </>
                 )}
                 </>)}
 
@@ -663,6 +738,14 @@ export function AppPage() {
 
       {showUpgrade && (
         <UpgradeModal onClose={() => setShowUpgrade(false)} onUpgrade={() => { setShowUpgrade(false); navigate({ to: "/settings" }); }} />
+      )}
+      {postModal && (
+        <PostThisModal
+          clone={postModal}
+          niche={activePreferences?.niche}
+          postType={dna?.postType}
+          onClose={() => setPostModal(null)}
+        />
       )}
     </div>
   );

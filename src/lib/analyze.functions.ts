@@ -21,8 +21,28 @@ type ScrapedPost = {
   type: string;
   url: string;
   displayUrl?: string;
+  thumbnailUrl?: string;
   videoUrl?: string;
   productType?: string;
+  timestamp?: string;
+  locationName?: string;
+  isSponsored?: boolean;
+  firstComment?: string;
+  musicInfo?: any;
+  owner?: {
+    username?: string;
+    fullName?: string;
+    followersCount?: number;
+    followingCount?: number;
+    mediaCount?: number;
+    verified?: boolean;
+    isBusinessAccount?: boolean;
+    biography?: string;
+    externalUrl?: string;
+    profilePicUrl?: string;
+    businessCategoryName?: string;
+    isPrivate?: boolean;
+  };
 };
 
 function detectPostType(url: string): string {
@@ -167,6 +187,18 @@ const AnalyzeSchema = z.object({
     }),
     engagementDrivers: z.array(z.string()),
     monetizationPotential: z.string(),
+    channelIntelligence: z
+      .object({
+        primaryNiche: z.string().optional(),
+        audienceLanguage: z.string().optional(),
+        isLikelyMonetized: z.boolean().optional(),
+        estimatedMonthlyViews: z.string().optional(),
+        estimatedMonthlyRevenue: z.string().optional(),
+        postingFrequency: z.string().optional(),
+        engagementRate: z.number().optional(),
+        contentStrengths: z.array(z.string()).optional(),
+      })
+      .optional(),
   }),
   clones: z.array(CloneSchema).length(5),
 });
@@ -198,7 +230,17 @@ async function analyzePostCombined(
     "captionDNA": { "structure": "Micro"|"Standard"|"Long-form", "tone": string, "persuasionStyle": "Problem-Agitate-Solve"|"Story"|"List"|"Direct"|"Curiosity", "ctaType": "Soft"|"Hard"|"Engagement"|"None", "score": number },
     "visualStyle": { "colorMood": string, "composition": string, "textOverlay": "None"|"Subtle"|"Heavy", "editStyle": string, "score": number },
     "engagementDrivers": string[],
-    "monetizationPotential": string
+    "monetizationPotential": string,
+    "channelIntelligence": {
+      "primaryNiche": string,
+      "audienceLanguage": string (e.g. "English", "English / Japanese"),
+      "isLikelyMonetized": boolean,
+      "estimatedMonthlyViews": string (range like "2M-4M"),
+      "estimatedMonthlyRevenue": string (range like "$1,200-$3,800" if monetized, else ""),
+      "postingFrequency": string (e.g. "4-5x/week"),
+      "engagementRate": number,
+      "contentStrengths": string[]
+    }
   },
   "clones": [
     { "versionNumber": 1, "angleType": "direct", "angleLabel": "Direct Improvement", "hook": string, "angle": string, "storyStructure": string, "caption": string, "visualDirection": string, "cta": string },
@@ -211,6 +253,10 @@ async function analyzePostCombined(
 
 URL: ${url}
 Account: @${scraped?.ownerUsername ?? "unknown"}
+Followers: ${scraped?.owner?.followersCount ?? "unknown"}
+Total posts: ${scraped?.owner?.mediaCount ?? "unknown"}
+Category: ${scraped?.owner?.businessCategoryName ?? "unknown"}
+Verified: ${scraped?.owner?.verified ?? false}
 Caption: "${scraped?.caption ?? "Not available"}"
 Likes: ${scraped?.likesCount ?? "Unknown"}
 Comments: ${scraped?.commentsCount ?? "Unknown"}
@@ -334,6 +380,8 @@ export const analyzeInstagramPost = createServerFn({ method: "POST" })
           analysisId: analysis.id,
           dna: { ...dna, sourceAccount: scraped?.ownerUsername ?? null, postType },
           clones,
+          scraped: scraped ?? null,
+          instagramUrl: data.url,
           fallback,
         },
       };
@@ -545,6 +593,128 @@ Each hook must use a different type. Be punchy and specific. No emojis at the st
     }
 
     return { hooks };
+  });
+
+// ============================================================
+// Regenerate clones using the user's brand preferences
+// ============================================================
+
+const PreferencesSchema = z.object({
+  niche: z.string().min(1).max(120),
+  contentGoal: z.string().min(1).max(120),
+  selectedAngles: z.array(z.string()).min(1).max(7),
+  targetAudience: z.string().max(500).optional().default(""),
+  keywords: z.array(z.string()).max(20).optional().default([]),
+  toneOfVoice: z.string().min(1).max(120),
+  contentFormat: z.string().min(1).max(120),
+});
+
+export const regenerateClonesWithPreferences = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      analysisId: z.string().uuid(),
+      preferences: PreferencesSchema,
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: analysis } = await supabase
+      .from("analyses")
+      .select("dna_analysis, source_account, post_type")
+      .eq("id", data.analysisId)
+      .eq("user_id", userId)
+      .single();
+    if (!analysis) throw new Error("Analysis not found");
+    const dna: any = analysis.dna_analysis;
+    const prefs = data.preferences;
+
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+    const gateway = createLovableAiGatewayProvider(apiKey);
+    const model = gateway("google/gemini-3-flash-preview");
+
+    const system = `You are an expert Instagram content creator. Generate content variations SPECIFICALLY tailored to the user's niche, goals, and audience — not just inspired by the source post. The user's preferences OVERRIDE the source post's niche. If the source post is about K-Pop and the user's niche is fitness, generate fitness content using the SAME psychological hooks and content structure. Return ONLY a JSON array — no prose, no markdown fences.`;
+
+    const angleCount = Math.min(5, Math.max(prefs.selectedAngles.length, 3));
+    const prompt = `SOURCE POST DNA:
+${JSON.stringify({
+  category: dna?.contentCategory,
+  hookType: dna?.hookBreakdown?.type,
+  emotionalArchitecture: dna?.emotionalArchitecture,
+  storyStructure: dna?.storyStructure,
+  engagementDrivers: dna?.engagementDrivers,
+  whyItWorks: dna?.whyItWorks,
+})}
+
+USER'S CONTENT PREFERENCES (generate for THESE, not the source niche):
+- Niche: ${prefs.niche}
+- Goal: ${prefs.contentGoal}
+- Angles requested: ${prefs.selectedAngles.join(", ")}
+- Target audience: ${prefs.targetAudience || "Not specified"}
+- Keywords to weave in naturally: ${(prefs.keywords ?? []).join(", ") || "None"}
+- Tone of voice: ${prefs.toneOfVoice}
+- Format: ${prefs.contentFormat}
+
+Generate EXACTLY ${angleCount} content versions tailored to the user's niche & goal. Use the psychological hooks from the source DNA but rewrite for the user's audience.
+
+Return ONLY a JSON array with this shape (no wrapping object):
+[
+  {
+    "versionNumber": 1,
+    "angleType": "direct"|"contrarian"|"story"|"authority"|"curiosity",
+    "angleLabel": "Short label naming the angle (e.g. 'Direct improvement', 'Personal story for fitness')",
+    "hook": "compelling 1-2 sentence hook",
+    "angle": "what makes this version different",
+    "storyStructure": "beat-by-beat structure",
+    "caption": "ready-to-post caption with line breaks and emojis, ends with CTA",
+    "visualDirection": "visual / format guidance",
+    "cta": "explicit call to action"
+  }
+]`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 25000);
+    let parsed: any[];
+    try {
+      const { text } = await generateText({ model, system, prompt, abortSignal: controller.signal });
+      parsed = parseJsonish<any[]>(text);
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("AI returned no clones");
+
+    // Wipe + replace clones for this analysis
+    await supabase.from("clones").delete().eq("analysis_id", data.analysisId).eq("user_id", userId);
+
+    const rows = parsed.slice(0, 5).map((c: any, i: number) => ({
+      analysis_id: data.analysisId,
+      user_id: userId,
+      version_number: c.versionNumber ?? i + 1,
+      angle_type: c.angleType ?? "direct",
+      angle: c.angle ?? "",
+      hook: c.hook ?? "",
+      story_structure: c.storyStructure ?? "",
+      caption: c.caption ?? "",
+      visual_direction: c.visualDirection ?? "",
+      cta: c.cta ?? "",
+    }));
+    const { error: cErr } = await supabase.from("clones").insert(rows);
+    if (cErr) throw new Error("Couldn't save clones");
+
+    return {
+      clones: rows.map((r) => ({
+        versionNumber: r.version_number,
+        angleType: r.angle_type,
+        angleLabel: parsed.find((p) => p.versionNumber === r.version_number)?.angleLabel ?? angleLabelFor(r.angle_type),
+        hook: r.hook,
+        angle: r.angle,
+        storyStructure: r.story_structure,
+        caption: r.caption,
+        visualDirection: r.visual_direction,
+        cta: r.cta,
+      })),
+    };
   });
 
 // ============================================================

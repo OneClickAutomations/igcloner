@@ -46,7 +46,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* IGCloner custom tokens */
+  /* IGCloner Instagram-identity custom tokens */
   --color-accent-primary: var(--accent-primary);
   --color-accent-primary-hover: var(--accent-primary-hover);
   --color-accent-secondary: var(--accent-secondary);
@@ -57,59 +57,104 @@
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
   --color-text-disabled: var(--text-disabled);
+  --color-ig1: var(--ig1);
+  --color-ig2: var(--ig2);
+  --color-ig3: var(--ig3);
+  --color-ig4: var(--ig4);
 }
 
 :root {
   --radius: 0.625rem;
 
-  /* IGCloner Dark Theme — enforced globally */
-  --background: #09090B;
-  --foreground: #FAFAFA;
-  --card: #111111;
-  --card-foreground: #FAFAFA;
-  --popover: #18181B;
-  --popover-foreground: #FAFAFA;
-  --primary: #8B5CF6;
-  --primary-foreground: #FAFAFA;
-  --secondary: #27272A;
-  --secondary-foreground: #FAFAFA;
-  --muted: #18181B;
-  --muted-foreground: #A1A1AA;
-  --accent: #18181B;
-  --accent-foreground: #FAFAFA;
+  /* Instagram gradient anchor colors */
+  --ig1: #F58529;
+  --ig2: #DD2A7B;
+  --ig3: #8134AF;
+  --ig4: #515BD4;
+
+  /* IGCloner Light Theme — Instagram identity */
+  --background: #FAFAFA;
+  --foreground: #0F0A1E;
+  --card: #FFFFFF;
+  --card-foreground: #0F0A1E;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F0A1E;
+  --primary: #8134AF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F3F0FF;
+  --secondary-foreground: #0F0A1E;
+  --muted: #F3F0FF;
+  --muted-foreground: #8A7FA0;
+  --accent: #F7F5FF;
+  --accent-foreground: #0F0A1E;
   --destructive: #EF4444;
-  --destructive-foreground: #FAFAFA;
-  --border: rgba(255, 255, 255, 0.09);
-  --input: rgba(255, 255, 255, 0.09);
-  --ring: rgba(139, 92, 246, 0.40);
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(129, 52, 175, 0.12);
+  --input: rgba(129, 52, 175, 0.18);
+  --ring: rgba(221, 42, 123, 0.40);
 
-  --chart-1: #8B5CF6;
-  --chart-2: #06B6D4;
-  --chart-3: #22C55E;
-  --chart-4: #F59E0B;
-  --chart-5: #EF4444;
+  --chart-1: #DD2A7B;
+  --chart-2: #8134AF;
+  --chart-3: #515BD4;
+  --chart-4: #F58529;
+  --chart-5: #22C55E;
 
-  --sidebar: #111111;
-  --sidebar-foreground: #FAFAFA;
-  --sidebar-primary: #8B5CF6;
-  --sidebar-primary-foreground: #FAFAFA;
-  --sidebar-accent: #18181B;
-  --sidebar-accent-foreground: #FAFAFA;
-  --sidebar-border: rgba(255, 255, 255, 0.09);
-  --sidebar-ring: rgba(139, 92, 246, 0.40);
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0F0A1E;
+  --sidebar-primary: #8134AF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F7F5FF;
+  --sidebar-accent-foreground: #0F0A1E;
+  --sidebar-border: rgba(129, 52, 175, 0.12);
+  --sidebar-ring: rgba(221, 42, 123, 0.40);
 
-  /* Custom IGCloner tokens */
-  --accent-primary: #8B5CF6;
-  --accent-primary-hover: #7C3AED;
-  --accent-primary-glow: rgba(139, 92, 246, 0.20);
-  --accent-secondary: #06B6D4;
-  --accent-secondary-glow: rgba(6, 182, 212, 0.15);
+  /* IGCloner semantic tokens */
+  --accent-primary: #8134AF;
+  --accent-primary-hover: #6e2c95;
+  --accent-primary-glow: rgba(129, 52, 175, 0.20);
+  --accent-secondary: #DD2A7B;
+  --accent-secondary-glow: rgba(221, 42, 123, 0.15);
   --status-success: #22C55E;
   --status-warning: #F59E0B;
   --status-error: #EF4444;
-  --text-primary: #FAFAFA;
-  --text-secondary: #D4D4D8;
-  --text-muted: #A1A1AA;
+  --text-primary: #0F0A1E;
+  --text-secondary: #4A4060;
+  --text-muted: #8A7FA0;
+  --text-disabled: #B8B0C8;
+}
+
+/* Dark mode override — applied when <html class="dark"> */
+.dark {
+  --background: #0D0B14;
+  --foreground: #F5F0FF;
+  --card: #1A1428;
+  --card-foreground: #F5F0FF;
+  --popover: #1A1428;
+  --popover-foreground: #F5F0FF;
+  --primary: #DD2A7B;
+  --primary-foreground: #FFFFFF;
+  --secondary: #1F1830;
+  --secondary-foreground: #F5F0FF;
+  --muted: #1F1830;
+  --muted-foreground: #8A7FA0;
+  --accent: #1F1830;
+  --accent-foreground: #F5F0FF;
+  --border: rgba(129, 52, 175, 0.28);
+  --input: rgba(129, 52, 175, 0.30);
+  --ring: rgba(221, 42, 123, 0.50);
+
+  --sidebar: #111111;
+  --sidebar-foreground: #F5F0FF;
+  --sidebar-accent: #1F1830;
+  --sidebar-accent-foreground: #F5F0FF;
+  --sidebar-border: rgba(129, 52, 175, 0.25);
+
+  --accent-primary: #DD2A7B;
+  --accent-primary-hover: #c1206a;
+  --accent-secondary: #8134AF;
+  --text-primary: #F5F0FF;
+  --text-secondary: #C5BAD8;
+  --text-muted: #8A7FA0;
   --text-disabled: #52525B;
 }
 
@@ -122,6 +167,8 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
   }
 
   html {
@@ -129,49 +176,68 @@
   }
 }
 
-/* Utility classes for IGCloner design system */
 @utility gradient-accent {
-  background: linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%);
+  background: linear-gradient(135deg, #F58529 0%, #DD2A7B 35%, #8134AF 70%, #515BD4 100%);
 }
 
 @utility gradient-card {
-  background: linear-gradient(145deg, rgba(139,92,246,0.06) 0%, rgba(6,182,212,0.03) 100%);
+  background: linear-gradient(145deg, rgba(245,133,41,0.06) 0%, rgba(221,42,123,0.06) 50%, rgba(129,52,175,0.04) 100%);
 }
 
 @utility gradient-glow {
-  background: radial-gradient(ellipse 600px 400px at 50% 0%, rgba(139,92,246,0.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse 600px 400px at 50% 0%, rgba(221,42,123,0.10) 0%, transparent 70%);
+}
+
+@utility gradient-text {
+  background: linear-gradient(135deg, #F58529 0%, #DD2A7B 35%, #8134AF 70%, #515BD4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility gradient-border-l {
+  border-left: 3px solid transparent;
+  border-image: linear-gradient(180deg, #F58529, #DD2A7B, #8134AF, #515BD4) 1;
+}
+
+@utility shadow-ig {
+  box-shadow: 0 2px 16px rgba(221, 42, 123, 0.08);
+}
+
+@utility shadow-ig-hover {
+  box-shadow: 0 8px 32px rgba(221, 42, 123, 0.15);
 }
 
 @utility border-subtle {
-  border-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(129, 52, 175, 0.06);
 }
 
 @utility border-default {
-  border-color: rgba(255, 255, 255, 0.09);
+  border-color: rgba(129, 52, 175, 0.12);
 }
 
 @utility border-strong {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(221, 42, 123, 0.25);
 }
 
 @utility border-accent {
-  border-color: rgba(139, 92, 246, 0.40);
+  border-color: rgba(221, 42, 123, 0.40);
 }
 
 @utility text-primary-token {
-  color: #FAFAFA;
+  color: var(--text-primary);
 }
 
 @utility text-secondary-token {
-  color: #D4D4D8;
+  color: var(--text-secondary);
 }
 
 @utility text-muted-token {
-  color: #A1A1AA;
+  color: var(--text-muted);
 }
 
 @utility text-disabled-token {
-  color: #52525B;
+  color: var(--text-disabled);
 }
 
 @utility font-mono-token {
