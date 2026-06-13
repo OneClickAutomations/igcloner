@@ -10,6 +10,7 @@ const SlideSchema = z.object({
   headline: z.string(),
   body: z.string(),
   visualNote: z.string(),
+  imageUrl: z.string().url().optional(),
 });
 
 const CarouselSchema = z.object({
