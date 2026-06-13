@@ -96,6 +96,7 @@ export const generateAngles = createServerFn({ method: "POST" })
 
     const dna = (analysis.dna_analysis as any) ?? {};
     const scraped = (analysis.scraped_data as any) ?? {};
+    const visionImage = await fetchVisionImage(scraped);
 
     // Pull niche: arg > profile default > fallback
     let niche = data.niche;
@@ -182,10 +183,13 @@ Return ONLY this exact JSON shape:
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 30000);
     try {
+      const messages: ModelMessage[] | undefined = visionImage
+        ? [{ role: "user", content: [{ type: "text", text: prompt }, { type: "image", image: visionImage.image, mediaType: visionImage.mediaType }] }]
+        : undefined;
       const { text } = await generateText({
         model,
         system,
-        prompt,
+        ...(messages ? { messages } : { prompt }),
         abortSignal: controller.signal,
       });
       const parsed = AnglesSchema.parse(parseJsonish(text));
