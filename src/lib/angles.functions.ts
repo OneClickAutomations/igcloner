@@ -38,26 +38,37 @@ function collectImageUrls(scraped: unknown): string[] {
   add(post.displayUrl);
   add(post.thumbnailUrl);
   add(post.imageUrl);
-  for (const r of Array.isArray(post.displayResources) ? post.displayResources : []) add(asRecord(r).src);
-  const children = Array.isArray(post.childPosts) ? post.childPosts : Array.isArray(post.children) ? post.children : [];
+  for (const r of Array.isArray(post.displayResources) ? post.displayResources : []) {
+    add(asRecord(r).src);
+  }
+  const children = Array.isArray(post.childPosts)
+    ? post.childPosts
+    : Array.isArray(post.children)
+      ? post.children
+      : [];
   for (const childValue of children) {
     const child = asRecord(childValue);
     add(child.displayUrl);
     add(child.thumbnailUrl);
     add(child.imageUrl);
-    for (const r of Array.isArray(child.displayResources) ? child.displayResources : []) add(asRecord(r).src);
+    for (const r of Array.isArray(child.displayResources) ? child.displayResources : []) {
+      add(asRecord(r).src);
+    }
   }
   return Array.from(urls).slice(0, 4);
 }
 
-async function fetchVisionImage(scraped: unknown): Promise<{ image: Uint8Array; mediaType: string } | null> {
+async function fetchVisionImage(
+  scraped: unknown,
+): Promise<{ image: Uint8Array; mediaType: string } | null> {
   for (const sourceUrl of collectImageUrls(scraped)) {
     try {
       const res = await fetch(sourceUrl, {
         headers: {
           Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
           Referer: "https://www.instagram.com/",
-          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36",
         },
       });
       const mediaType = res.headers.get("content-type")?.split(";")[0]?.trim() || "image/jpeg";
@@ -184,7 +195,15 @@ Return ONLY this exact JSON shape:
     const timer = setTimeout(() => controller.abort(), 30000);
     try {
       const messages: ModelMessage[] | undefined = visionImage
-        ? [{ role: "user", content: [{ type: "text", text: prompt }, { type: "image", image: visionImage.image, mediaType: visionImage.mediaType }] }]
+        ? [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "image", image: visionImage.image, mediaType: visionImage.mediaType },
+              ],
+            },
+          ]
         : undefined;
       const { text } = await generateText({
         model,
