@@ -557,10 +557,19 @@ export function ReelStudio() {
                 )}
 
                 <div className="mt-4 flex gap-2">
-                  <Button onClick={handleApproveDirection} className="flex-1 gap-1.5">
-                    <Check className="h-4 w-4" /> {direction.approved ? "Re-approve & continue" : "Approve & generate script"}
+                  <Button
+                    onClick={handleApproveDirection}
+                    size="lg"
+                    className="flex-1 gap-1.5 gradient-accent text-white border-0 hover:opacity-95"
+                  >
+                    {direction.approved ? <Check className="h-4 w-4" /> : null}
+                    Next: Write Script
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
+                <p className="mt-2 text-[11px] text-muted-foreground text-center">
+                  Step 1 of 3 — locks the look so the script and video stay on-brand.
+                </p>
               </div>
             </div>
           )}
