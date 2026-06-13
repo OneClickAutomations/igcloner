@@ -389,7 +389,7 @@ The "forensics" object is REQUIRED. Be specific and surgical — these data poin
 
   // Hard timeout so we never silently exceed the dev/edge HTTP window.
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25000);
+  const timer = setTimeout(() => controller.abort(), 45000);
   try {
     const messages: ModelMessage[] | undefined = visionImage
       ? [
