@@ -321,6 +321,41 @@ const AnalyzeSchema = z.object({
         contentStrengths: z.array(z.string()).optional(),
       })
       .optional(),
+    videoVisualDNA: z
+      .object({
+        subjectType: z.string().optional(),
+        subjectDescription: z.string().optional(),
+        backgroundType: z.string().optional(),
+        backgroundDescription: z.string().optional(),
+        colorPalette: z
+          .object({
+            dominant: z.string().optional(),
+            secondary: z.string().optional(),
+            accent: z.string().optional(),
+            mood: z.string().optional(),
+            approximateHex: z.array(z.string()).optional(),
+          })
+          .optional(),
+        textStyle: z
+          .object({
+            present: z.boolean().optional(),
+            placement: z.string().optional(),
+            fontStyle: z.string().optional(),
+            fontSize: z.string().optional(),
+            color: z.string().optional(),
+            animation: z.string().optional(),
+          })
+          .optional(),
+        lightingStyle: z.string().optional(),
+        editingStyle: z.string().optional(),
+        paceAndEnergy: z.string().optional(),
+        contentFormat: z.string().optional(),
+        audioStyle: z.string().optional(),
+        productionLevel: z.string().optional(),
+        platformAesthetic: z.string().optional(),
+        recreationInstructions: z.string().optional(),
+      })
+      .optional(),
   }),
   forensics: z.any().optional(),
   clones: z.array(CloneSchema).length(5),
