@@ -16,6 +16,10 @@ import {
   Trash2,
   Send,
   Eye,
+  ArrowRight,
+  Zap,
+  Crown,
+  Sparkle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
