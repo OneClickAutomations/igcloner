@@ -80,7 +80,48 @@ async function scrapeInstagram(url: string): Promise<ScrapedPost> {
   if (!items || items.length === 0) {
     throw new Error("No data returned for this Instagram URL. It may be private or invalid.");
   }
-  return items[0];
+  const post = items[0];
+
+  // Two-step: if owner.followersCount is missing, scrape the profile separately
+  // so the Post Intelligence card can show real follower / media counts.
+  const username = post.ownerUsername || post.owner?.username;
+  if (username && !(post.owner?.followersCount && post.owner.followersCount > 0)) {
+    try {
+      const profEndpoint = `https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${token}`;
+      const profRes = await fetch(profEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usernames: [username] }),
+      });
+      if (profRes.ok) {
+        const profItems = (await profRes.json()) as any[];
+        const p = profItems?.[0] ?? null;
+        if (p) {
+          post.owner = {
+            ...(post.owner ?? {}),
+            username: p.username ?? username,
+            fullName: p.fullName ?? post.owner?.fullName,
+            biography: p.biography ?? post.owner?.biography,
+            followersCount: p.followersCount ?? post.owner?.followersCount,
+            followingCount: p.followsCount ?? p.followingCount ?? post.owner?.followingCount,
+            mediaCount: p.postsCount ?? p.mediaCount ?? post.owner?.mediaCount,
+            verified: p.verified ?? post.owner?.verified,
+            isBusinessAccount: p.isBusinessAccount ?? post.owner?.isBusinessAccount,
+            externalUrl: p.externalUrl ?? post.owner?.externalUrl,
+            profilePicUrl: p.profilePicUrl ?? p.profilePicUrlHD ?? post.owner?.profilePicUrl,
+            businessCategoryName: p.businessCategoryName ?? post.owner?.businessCategoryName,
+            isPrivate: p.private ?? p.isPrivate ?? post.owner?.isPrivate,
+          } as any;
+        }
+      } else {
+        console.warn("[Apify] profile scrape failed:", profRes.status);
+      }
+    } catch (e) {
+      console.warn("[Apify] profile scrape error:", (e as Error).message);
+    }
+  }
+
+  return post;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
