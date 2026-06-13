@@ -27,6 +27,7 @@ export function AnglesGrid({ analysisId, initialNiche }: Props) {
   const [customNiche, setCustomNiche] = useState("");
   const [angles, setAngles] = useState<Angle[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [openingFormat, setOpeningFormat] = useState<string | null>(null);
 
@@ -44,6 +45,13 @@ export function AnglesGrid({ analysisId, initialNiche }: Props) {
       formatRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [selectedIdx]);
+
+  useEffect(() => {
+    if (!loading) return;
+    setLoadingStep(0);
+    const id = setInterval(() => setLoadingStep((s) => (s < 4 ? s + 1 : s)), 1800);
+    return () => clearInterval(id);
+  }, [loading]);
 
   const fetchAngles = async (n: string) => {
     setLoading(true);
@@ -144,11 +152,7 @@ export function AnglesGrid({ analysisId, initialNiche }: Props) {
       </div>
 
       {loading && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-40 animate-pulse rounded-xl border border-border bg-muted/40" />
-          ))}
-        </div>
+        <AnglesLoading step={loadingStep} niche={niche} />
       )}
 
       {angles && (
@@ -287,5 +291,48 @@ function FormatCard({
         )}
       </div>
     </button>
+  );
+}
+
+function AnglesLoading({ step, niche }: { step: number; niche: string | null }) {
+  const steps = [
+    "Re-reading the source post…",
+    "Extracting the core concept & emotional mechanic…",
+    `Translating into ${niche ?? "your niche"}…`,
+    "Writing 5 ready-to-post hooks…",
+    "Scoring viral potential…",
+  ];
+  return (
+    <div className="rounded-2xl border border-accent-primary/30 bg-accent-primary/5 p-6">
+      <div className="mb-4 flex items-center gap-3">
+        <Loader2 className="h-5 w-5 animate-spin text-accent-primary" />
+        <p className="text-sm font-semibold">
+          Generating 5 viral angles for <span className="gradient-text">{niche}</span>…
+        </p>
+      </div>
+      <ul className="space-y-2">
+        {steps.map((label, i) => {
+          const done = i < step;
+          const active = i === step;
+          return (
+            <li
+              key={i}
+              className={`flex items-center gap-2 text-xs transition ${
+                done ? "text-muted-foreground line-through" : active ? "text-foreground font-medium" : "text-muted-foreground/60"
+              }`}
+            >
+              {done ? (
+                <Check className="h-3.5 w-3.5 text-accent-primary" />
+              ) : active ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-accent-primary" />
+              ) : (
+                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+              )}
+              {label}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
