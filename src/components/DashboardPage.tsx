@@ -181,7 +181,7 @@ export function DashboardPage() {
                   const t = a.scraped_data?.displayUrl || a.scraped_data?.thumbnailUrl;
                   return t ? (
                     <div className="mb-3 aspect-[4/3] overflow-hidden rounded-lg bg-muted">
-                      <img src={t} alt={`@${a.source_account ?? ""} post`} className="h-full w-full object-cover" loading="lazy" />
+                      <img src={t} alt={`@${a.source_account ?? ""} post`} className="h-full w-full object-cover" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                     </div>
                   ) : (
                     <div className="mb-3 flex aspect-[4/3] items-center justify-center rounded-lg gradient-card text-3xl">
