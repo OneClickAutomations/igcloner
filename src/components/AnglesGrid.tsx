@@ -293,3 +293,46 @@ function FormatCard({
     </button>
   );
 }
+
+function AnglesLoading({ step, niche }: { step: number; niche: string | null }) {
+  const steps = [
+    "Re-reading the source post…",
+    "Extracting the core concept & emotional mechanic…",
+    `Translating into ${niche ?? "your niche"}…`,
+    "Writing 5 ready-to-post hooks…",
+    "Scoring viral potential…",
+  ];
+  return (
+    <div className="rounded-2xl border border-accent-primary/30 bg-accent-primary/5 p-6">
+      <div className="mb-4 flex items-center gap-3">
+        <Loader2 className="h-5 w-5 animate-spin text-accent-primary" />
+        <p className="text-sm font-semibold">
+          Generating 5 viral angles for <span className="gradient-text">{niche}</span>…
+        </p>
+      </div>
+      <ul className="space-y-2">
+        {steps.map((label, i) => {
+          const done = i < step;
+          const active = i === step;
+          return (
+            <li
+              key={i}
+              className={`flex items-center gap-2 text-xs transition ${
+                done ? "text-muted-foreground line-through" : active ? "text-foreground font-medium" : "text-muted-foreground/60"
+              }`}
+            >
+              {done ? (
+                <Check className="h-3.5 w-3.5 text-accent-primary" />
+              ) : active ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-accent-primary" />
+              ) : (
+                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+              )}
+              {label}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
