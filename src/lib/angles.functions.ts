@@ -9,6 +9,7 @@ const AngleSchema = z.object({
   angleName: z.string(),
   angleType: z.string(),
   hookLine: z.string(),
+  sourceConnection: z.string(),
   concept: z.string(),
   whyItWillPerform: z.string(),
   recommendedFormat: z.enum(["reel", "carousel", "image"]),
