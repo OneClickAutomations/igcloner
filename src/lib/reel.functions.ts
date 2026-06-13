@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { generateText } from "ai";
+import { generateText, type ModelMessage } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+import { fetchVisionImage, buildSourceContextBlock } from "@/lib/source-context";
 
 const SceneSchema = z.object({
   index: z.number(),
@@ -67,6 +68,28 @@ export const generateReel = createServerFn({ method: "POST" })
     const forensics = (dna.forensics?.videoForensics ?? dna.forensics ?? null) as any;
     const settings = SettingsSchema.parse(data.settings ?? {});
 
+    // Pull the original source post so the AI can SEE and READ the post
+    // it's supposed to be cloning, not just the DNA summary.
+    let scraped: any = null;
+    if (project.analysis_id) {
+      const { data: analysis } = await supabase
+        .from("analyses")
+        .select("scraped_data")
+        .eq("id", project.analysis_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      scraped = (analysis as any)?.scraped_data ?? null;
+    }
+    const visionImage = scraped ? await fetchVisionImage(scraped) : null;
+    const sourceBlock = buildSourceContextBlock(scraped ?? {}, dna, !!visionImage);
+
+    // Default the user "angle" from the selected viral angle if they
+    // didn't type their own — the field on the form is optional.
+    const effectiveAngle =
+      data.angle ||
+      [prefs.angle, prefs.angleConcept].filter(Boolean).join(" — ") ||
+      "";
+
     const gateway = createLovableAiGatewayProvider(apiKey);
     const model = gateway("google/gemini-3-flash-preview");
 
@@ -93,6 +116,8 @@ Preserve the source's psychological mechanics (hook power, retention loop, share
 ${modeBlock}
 ${forensicsBlock}
 
+${sourceBlock}
+
 Return JSON of exact shape:
 {
   "title": string,
@@ -116,11 +141,26 @@ Source DNA snapshot (inspiration, never copy verbatim):
 - Hook type: ${dna.hookBreakdown?.type ?? ""}
 - Visual style: color=${dna.visualStyle?.colorMood ?? ""}; composition=${dna.visualStyle?.composition ?? ""}
 - Brand niche: ${prefs.niche ?? "general"}
-${data.angle ? `\nUser angle: ${data.angle}` : ""}
+${effectiveAngle ? `\nUser angle / chosen viral angle to execute: ${effectiveAngle}` : ""}
 
 Output the JSON object only.`;
 
-    const { text } = await generateText({ model, system, prompt });
+    const messages: ModelMessage[] | undefined = visionImage
+      ? [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              { type: "image", image: visionImage.image, mediaType: visionImage.mediaType },
+            ],
+          },
+        ]
+      : undefined;
+    const { text } = await generateText({
+      model,
+      system,
+      ...(messages ? { messages } : { prompt }),
+    });
     const parsed = ReelSchema.parse(parseJsonish(text));
 
     // Second call: VEO 3 prompt
