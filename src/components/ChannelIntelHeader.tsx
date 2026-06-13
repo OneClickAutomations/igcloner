@@ -56,7 +56,7 @@ export function ChannelIntelHeader({
                 alt={`@${username} post`}
                 loading="lazy"
                 referrerPolicy="no-referrer"
-                crossOrigin="anonymous"
+               
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = "none";
                 }}
