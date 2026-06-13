@@ -32,6 +32,8 @@ import { SlidePreviewDialog } from "@/components/SlidePreviewDialog";
 import { PostScheduleModal } from "@/components/PostScheduleModal";
 import { Send } from "lucide-react";
 import { EnhanceButton } from "@/components/EnhanceButton";
+import { generateCarouselSlideImage } from "@/lib/carousel-image.functions";
+import { ImageIcon } from "lucide-react";
 
 function copy(text: string, label = "Copied") {
   navigator.clipboard.writeText(text);
@@ -87,6 +89,7 @@ export function CarouselStudio() {
   const generateFn = useServerFn(generateCarousel);
   const regenFn = useServerFn(regenerateSlide);
   const saveFn = useServerFn(saveCarousel);
+  const slideImageFn = useServerFn(generateCarouselSlideImage);
 
   const { data, isLoading, refetch } = useQuery({
     enabled: !!projectId,
@@ -105,6 +108,8 @@ export function CarouselStudio() {
   const [regenInstr, setRegenInstr] = useState("");
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
   const [postOpen, setPostOpen] = useState(false);
+  const [imgBusy, setImgBusy] = useState<number | null>(null);
+  const [imgDirection, setImgDirection] = useState("");
 
   useEffect(() => {
     if (project?.project_data) {
@@ -161,6 +166,23 @@ export function CarouselStudio() {
       toast.error(e?.message || "Regenerate failed");
     } finally {
       setRegenBusy(null);
+    }
+  };
+
+  const handleGenerateSlideImage = async () => {
+    if (!active) return;
+    setImgBusy(active.index);
+    try {
+      const res: any = await slideImageFn({
+        data: { projectId, slideIndex: active.index, extraDirection: imgDirection || undefined },
+      });
+      const updated = (res.project?.project_data ?? null) as CarouselDoc | null;
+      if (updated) setDoc(updated);
+      toast.success(`Slide ${active.index} image generated`);
+    } catch (e: any) {
+      toast.error(e?.message || "Image generation failed");
+    } finally {
+      setImgBusy(null);
     }
   };
 
