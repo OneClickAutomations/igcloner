@@ -147,7 +147,13 @@ export const generateProjectImage = createServerFn({ method: "POST" })
 
     const userContent: any[] = [{ type: "text", text: prompt }];
     if (refImage) {
-      const b64 = btoa(String.fromCharCode(...refImage.image));
+      // Chunked base64 to avoid stack overflow on large images.
+      let bin = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < refImage.image.length; i += chunk) {
+        bin += String.fromCharCode(...refImage.image.subarray(i, i + chunk));
+      }
+      const b64 = btoa(bin);
       userContent.push({
         type: "image_url",
         image_url: { url: `data:${refImage.mediaType};base64,${b64}` },
