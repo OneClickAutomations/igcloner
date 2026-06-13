@@ -1,0 +1,108 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+const FAL_BASE = "https://queue.fal.run";
+
+const MODELS = {
+  "veo3-fast": "fal-ai/veo3/fast",
+  "veo3": "fal-ai/veo3",
+  "kling-2.1": "fal-ai/kling-video/v2.1/standard/text-to-video",
+} as const;
+
+type ModelKey = keyof typeof MODELS;
+
+const SubmitInput = z.object({
+  prompt: z.string().min(10).max(8000),
+  model: z.enum(["veo3-fast", "veo3", "kling-2.1"]).default("veo3-fast"),
+  aspect_ratio: z.enum(["16:9", "9:16", "1:1"]).default("9:16"),
+  duration: z.union([z.literal(5), z.literal(8), z.literal(10)]).default(8),
+  generate_audio: z.boolean().default(true),
+  image_url: z.string().url().optional(),
+});
+
+function authHeader() {
+  const key = process.env.FAL_KEY;
+  if (!key) throw new Error("FAL_KEY is not configured");
+  return { Authorization: `Key ${key}`, "Content-Type": "application/json" };
+}
+
+function buildPayload(data: z.infer<typeof SubmitInput>) {
+  if (data.model === "kling-2.1") {
+    return {
+      prompt: data.prompt,
+      aspect_ratio: data.aspect_ratio,
+      duration: String(data.duration === 8 ? 5 : data.duration),
+      ...(data.image_url ? { image_url: data.image_url } : {}),
+    };
+  }
+  // veo3 / veo3-fast
+  return {
+    prompt: data.prompt,
+    aspect_ratio: data.aspect_ratio,
+    duration: `${data.duration === 5 ? 8 : data.duration}s`,
+    generate_audio: data.generate_audio,
+    resolution: "720p",
+    ...(data.image_url ? { image_url: data.image_url } : {}),
+  };
+}
+
+export const submitVideoJob = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => SubmitInput.parse(d))
+  .handler(async ({ data }) => {
+    const slug = MODELS[data.model as ModelKey];
+    const res = await fetch(`${FAL_BASE}/${slug}`, {
+      method: "POST",
+      headers: authHeader(),
+      body: JSON.stringify(buildPayload(data)),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`fal.ai submit failed (${res.status}): ${text.slice(0, 400)}`);
+    }
+    const j = JSON.parse(text) as { request_id: string };
+    return { requestId: j.request_id, modelSlug: slug };
+  });
+
+const PollInput = z.object({
+  requestId: z.string().min(1),
+  modelSlug: z.string().min(1),
+});
+
+export const pollVideoJob = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => PollInput.parse(d))
+  .handler(async ({ data }) => {
+    const statusRes = await fetch(
+      `${FAL_BASE}/${data.modelSlug}/requests/${data.requestId}/status`,
+      { headers: authHeader() },
+    );
+    if (!statusRes.ok) {
+      throw new Error(`status check failed (${statusRes.status})`);
+    }
+    const status = (await statusRes.json()) as {
+      status: "IN_QUEUE" | "IN_PROGRESS" | "COMPLETED";
+      queue_position?: number;
+      logs?: Array<{ message: string }>;
+    };
+
+    if (status.status !== "COMPLETED") {
+      return {
+        status: status.status,
+        queuePosition: status.queue_position,
+        videoUrl: null as string | null,
+      };
+    }
+
+    const resultRes = await fetch(
+      `${FAL_BASE}/${data.modelSlug}/requests/${data.requestId}`,
+      { headers: authHeader() },
+    );
+    if (!resultRes.ok) {
+      throw new Error(`result fetch failed (${resultRes.status})`);
+    }
+    const result = (await resultRes.json()) as { video?: { url?: string } };
+    const url = result?.video?.url ?? null;
+    return { status: "COMPLETED" as const, queuePosition: null, videoUrl: url };
+  });
