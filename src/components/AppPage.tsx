@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Sparkles, Loader2, Link2, AlertCircle, X, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { analyzeInstagramPost, getAnalysisById, getUsage } from "@/lib/analyze.functions";
-import { listProjects, type ProjectFormat } from "@/lib/projects.functions";
+import { listProjects } from "@/lib/projects.functions";
 import { ChannelIntelHeader } from "@/components/ChannelIntelHeader";
 import { IntentFlow } from "@/components/IntentFlow";
 import { DecisionCard } from "@/components/DecisionCard";
