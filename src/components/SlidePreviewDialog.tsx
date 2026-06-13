@@ -79,6 +79,15 @@ export function SlidePreviewDialog({
 
         <div className="relative">
           {/* 1:1 square slide preview */}
+          {slide.imageUrl ? (
+            <div className="relative mx-auto aspect-square w-full max-w-[640px] overflow-hidden rounded-2xl shadow-2xl">
+              <img
+                src={slide.imageUrl}
+                alt={`Slide ${slide.index}`}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ) : (
           <div
             className="relative mx-auto flex aspect-square w-full max-w-[640px] flex-col justify-between overflow-hidden rounded-2xl p-10 shadow-2xl"
             style={{ backgroundColor: bg, color: fg }}
@@ -111,6 +120,7 @@ export function SlidePreviewDialog({
               Visual: {slide.visualNote}
             </div>
           </div>
+          )}
 
           {/* Prev / next */}
           {hasPrev && (

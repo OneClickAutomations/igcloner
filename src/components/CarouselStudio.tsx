@@ -32,6 +32,8 @@ import { SlidePreviewDialog } from "@/components/SlidePreviewDialog";
 import { PostScheduleModal } from "@/components/PostScheduleModal";
 import { Send } from "lucide-react";
 import { EnhanceButton } from "@/components/EnhanceButton";
+import { generateCarouselSlideImage } from "@/lib/carousel-image.functions";
+import { ImageIcon } from "lucide-react";
 
 function copy(text: string, label = "Copied") {
   navigator.clipboard.writeText(text);
@@ -87,6 +89,7 @@ export function CarouselStudio() {
   const generateFn = useServerFn(generateCarousel);
   const regenFn = useServerFn(regenerateSlide);
   const saveFn = useServerFn(saveCarousel);
+  const slideImageFn = useServerFn(generateCarouselSlideImage);
 
   const { data, isLoading, refetch } = useQuery({
     enabled: !!projectId,
@@ -105,6 +108,8 @@ export function CarouselStudio() {
   const [regenInstr, setRegenInstr] = useState("");
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
   const [postOpen, setPostOpen] = useState(false);
+  const [imgBusy, setImgBusy] = useState<number | null>(null);
+  const [imgDirection, setImgDirection] = useState("");
 
   useEffect(() => {
     if (project?.project_data) {
@@ -161,6 +166,23 @@ export function CarouselStudio() {
       toast.error(e?.message || "Regenerate failed");
     } finally {
       setRegenBusy(null);
+    }
+  };
+
+  const handleGenerateSlideImage = async () => {
+    if (!active) return;
+    setImgBusy(active.index);
+    try {
+      const res: any = await slideImageFn({
+        data: { projectId, slideIndex: active.index, extraDirection: imgDirection || undefined },
+      });
+      const updated = (res.project?.project_data ?? null) as CarouselDoc | null;
+      if (updated) setDoc(updated);
+      toast.success(`Slide ${active.index} image generated`);
+    } catch (e: any) {
+      toast.error(e?.message || "Image generation failed");
+    } finally {
+      setImgBusy(null);
     }
   };
 
@@ -350,9 +372,17 @@ export function CarouselStudio() {
                     onClick={() => setActiveIdx(s.index)}
                     className="flex flex-1 items-start gap-3 text-left"
                   >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold">
-                      {s.index}
-                    </div>
+                    {s.imageUrl ? (
+                      <img
+                        src={s.imageUrl}
+                        alt={`Slide ${s.index}`}
+                        className="h-10 w-10 shrink-0 rounded-md object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold">
+                        {s.index}
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <Badge variant="secondary" className="text-[10px]">{s.role}</Badge>
@@ -454,6 +484,53 @@ export function CarouselStudio() {
                         <Wand2 className="h-3.5 w-3.5" />
                       )}
                       Regenerate
+                    </Button>
+                  </div>
+                </div>
+                <div className="mt-4 border-t border-border pt-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <Label className="text-xs">Designed slide image</Label>
+                    {active.imageUrl && (
+                      <a
+                        href={active.imageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] font-medium text-accent-primary hover:underline"
+                      >
+                        Open full size
+                      </a>
+                    )}
+                  </div>
+                  {active.imageUrl ? (
+                    <div className="mb-2 overflow-hidden rounded-lg border border-border bg-muted">
+                      <img
+                        src={active.imageUrl}
+                        alt={`Slide ${active.index} design`}
+                        className="aspect-square w-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      AI will enhance the visual direction 10x and design a 1:1 slide image using the carousel's palette, typography, layout, and mood.
+                    </p>
+                  )}
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      value={imgDirection}
+                      onChange={(e) => setImgDirection(e.target.value)}
+                      placeholder="Optional: 'more minimalist', 'add a chart', 'magazine cover style'…"
+                    />
+                    <Button
+                      onClick={handleGenerateSlideImage}
+                      disabled={imgBusy === active.index}
+                      className="gradient-accent text-white border-0 hover:opacity-95"
+                    >
+                      {imgBusy === active.index ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <ImageIcon className="h-3.5 w-3.5" />
+                      )}
+                      {active.imageUrl ? "Regenerate image" : "Generate slide image"}
                     </Button>
                   </div>
                 </div>
