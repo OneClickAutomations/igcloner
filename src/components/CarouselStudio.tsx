@@ -479,6 +479,53 @@ export function CarouselStudio() {
                     </Button>
                   </div>
                 </div>
+                <div className="mt-4 border-t border-border pt-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <Label className="text-xs">Designed slide image</Label>
+                    {active.imageUrl && (
+                      <a
+                        href={active.imageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] font-medium text-accent-primary hover:underline"
+                      >
+                        Open full size
+                      </a>
+                    )}
+                  </div>
+                  {active.imageUrl ? (
+                    <div className="mb-2 overflow-hidden rounded-lg border border-border bg-muted">
+                      <img
+                        src={active.imageUrl}
+                        alt={`Slide ${active.index} design`}
+                        className="aspect-square w-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      AI will enhance the visual direction 10x and design a 1:1 slide image using the carousel's palette, typography, layout, and mood.
+                    </p>
+                  )}
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      value={imgDirection}
+                      onChange={(e) => setImgDirection(e.target.value)}
+                      placeholder="Optional: 'more minimalist', 'add a chart', 'magazine cover style'…"
+                    />
+                    <Button
+                      onClick={handleGenerateSlideImage}
+                      disabled={imgBusy === active.index}
+                      className="gradient-accent text-white border-0 hover:opacity-95"
+                    >
+                      {imgBusy === active.index ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <ImageIcon className="h-3.5 w-3.5" />
+                      )}
+                      {active.imageUrl ? "Regenerate image" : "Generate slide image"}
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
 
