@@ -1,14 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { generateText } from "ai";
+import { generateText, type ModelMessage } from "ai";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { computeViralScore } from "@/lib/scoring";
 
 const InputSchema = z.object({
-  url: z.string().url().refine((u) => u.includes("instagram.com"), {
-    message: "Must be an Instagram URL",
-  }),
+  url: z
+    .string()
+    .url()
+    .refine((u) => u.includes("instagram.com"), {
+      message: "Must be an Instagram URL",
+    }),
 });
 
 type ScrapedPost = {
@@ -78,6 +81,83 @@ async function scrapeInstagram(url: string): Promise<ScrapedPost> {
     throw new Error("No data returned for this Instagram URL. It may be private or invalid.");
   }
   return items[0];
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+function collectImageUrls(scraped: unknown): string[] {
+  const urls = new Set<string>();
+  const add = (value: unknown) => {
+    if (typeof value === "string" && /^https?:\/\//i.test(value)) urls.add(value);
+  };
+  const post = asRecord(scraped);
+  add(post.displayUrl);
+  add(post.thumbnailUrl);
+  add(post.imageUrl);
+  for (const r of Array.isArray(post.displayResources) ? post.displayResources : []) {
+    add(asRecord(r).src);
+  }
+  const children = Array.isArray(post.childPosts)
+    ? post.childPosts
+    : Array.isArray(post.children)
+      ? post.children
+      : [];
+  for (const childValue of children) {
+    const child = asRecord(childValue);
+    add(child.displayUrl);
+    add(child.thumbnailUrl);
+    add(child.imageUrl);
+    for (const r of Array.isArray(child.displayResources) ? child.displayResources : []) {
+      add(asRecord(r).src);
+    }
+  }
+  return Array.from(urls).slice(0, 4);
+}
+
+async function fetchVisionImage(
+  scraped: ScrapedPost | null,
+): Promise<{ image: Uint8Array; mediaType: string; sourceUrl: string } | null> {
+  for (const sourceUrl of collectImageUrls(scraped)) {
+    try {
+      const res = await fetch(sourceUrl, {
+        headers: {
+          Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+          Referer: "https://www.instagram.com/",
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+        },
+      });
+      const mediaType = res.headers.get("content-type")?.split(";")[0]?.trim() || "image/jpeg";
+      if (!res.ok || !mediaType.startsWith("image/")) continue;
+      const buffer = await res.arrayBuffer();
+      if (buffer.byteLength === 0 || buffer.byteLength > 8 * 1024 * 1024) continue;
+      return { image: new Uint8Array(buffer), mediaType, sourceUrl };
+    } catch (e) {
+      console.warn("[analyze] source image fetch failed:", (e as Error).message);
+    }
+  }
+  return null;
+}
+
+function sourceEvidence(scraped: unknown, visionImageUrl?: string | null): string {
+  const post = asRecord(scraped);
+  const owner = asRecord(post.owner);
+  return JSON.stringify(
+    {
+      imageAttachedForVision: Boolean(visionImageUrl),
+      visionImageUrl: visionImageUrl ?? null,
+      caption: post.caption ?? null,
+      altText: post.alt ?? post.accessibilityCaption ?? null,
+      firstComment: post.firstComment ?? null,
+      hashtags: post.hashtags ?? [],
+      location: post.locationName ?? null,
+      accountBio: owner.biography ?? null,
+    },
+    null,
+    2,
+  );
 }
 
 const CLAUDE_MODEL = "claude-sonnet-4-5";
@@ -205,22 +285,19 @@ const AnalyzeSchema = z.object({
   clones: z.array(CloneSchema).length(5),
 });
 
-async function analyzePostCombined(
-  scraped: ScrapedPost | null,
-  url: string,
-  postType: string,
-) {
+async function analyzePostCombined(scraped: ScrapedPost | null, url: string, postType: string) {
   const apiKey = process.env.LOVABLE_API_KEY;
   if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
   const gateway = createLovableAiGatewayProvider(apiKey);
-  const model = gateway("google/gemini-3-flash-preview");
+  const model = gateway("google/gemini-2.5-pro");
+  const visionImage = await fetchVisionImage(scraped);
 
-  const system = `You are a world-class Instagram content strategist and conversion copywriter. Reverse-engineer WHY content performs, then generate 5 distinct original variations. Be specific, tactical, actionable. Return ONLY a single JSON object with no prose, no markdown fences.`;
+  const system = `You are IGCloner's forensic Instagram analyst. First extract the literal evidence from the post image/video thumbnail: visible text/OCR, subject, symbols, setting, objects, emotions, and visual hierarchy. Then infer why it works and create variations. Never invent a topic from the URL alone. If the user later chooses a different niche, downstream ideas must preserve the source post's core message, emotional mechanism, and visual metaphor while translating it into that niche. Return ONLY a single JSON object with no prose, no markdown fences.`;
 
   const forensicsBlock =
     postType === "Reel"
       ? `"videoForensics": {
-      "hook": { "type": string, "element": string, "openingAction": string, "curiosityGap": string, "audioHook": string, "strength": number },
+      "hook": { "type": string, "element": string, "exactVisibleText": string, "openingAction": string, "curiosityGap": string, "audioHook": string, "strength": number },
       "pacing": { "overall": "very-fast"|"fast"|"medium"|"slow", "averageCutDuration": number, "transitionTypes": string, "rhythmSynced": boolean, "bRollUsage": "heavy"|"moderate"|"minimal"|"none" },
       "visual": { "shootingStyle": string, "cameraMovements": string, "shotTypes": string, "colorGrade": string, "productionQuality": string },
       "audio": { "musicType": string, "musicEnergy": string, "voiceover": string, "audioVisualSync": string },
@@ -230,7 +307,7 @@ async function analyzePostCombined(
       : postType === "Carousel"
       ? `"carouselForensics": {
       "overall": { "totalSlides": number, "carouselType": string, "narrativeArc": string, "contentDensity": string, "visualConsistency": string },
-      "slide1": { "hookMechanism": string, "layout": string, "colorScheme": string, "typography": string, "firstImpressionScore": number },
+      "slide1": { "hookMechanism": string, "exactVisibleText": string, "layout": string, "colorScheme": string, "typography": string, "firstImpressionScore": number },
       "middleSlides": [{ "purpose": string, "informationDensity": string, "visualType": string, "layoutTemplate": string, "microHook": string }],
       "finalSlide": { "ctaType": string, "urgencyElement": string, "brandElement": string },
       "designSystem": { "colorPalette": string, "fontSystem": string, "gridSystem": string, "iconStyle": string, "whiteSpaceUsage": string },
@@ -241,7 +318,7 @@ async function analyzePostCombined(
       "composition": { "technique": string, "foreground": string, "background": string, "depthOfField": string, "visualWeight": string },
       "color": { "dominant": string, "paletteType": string, "temperature": string, "saturation": string, "contrast": string, "mood": string, "hex": string[] },
       "lighting": { "source": string, "direction": string, "shadowQuality": string, "overallExposure": string },
-      "text": { "present": boolean, "position": string, "style": string },
+      "text": { "present": boolean, "exactVisibleText": string, "position": string, "style": string, "hierarchy": string },
       "editing": { "filterStyle": string, "sharpness": string, "grain": string },
       "categorySignals": { "aspirationalLevel": string, "authenticityLevel": string },
       "psychology": { "primaryVisualHook": string, "emotionalResponse": string, "saveWorthinessElements": string, "shareWorthiness": string }
@@ -284,6 +361,9 @@ async function analyzePostCombined(
   "forensics": { ${forensicsBlock} }
 }
 
+SOURCE EVIDENCE — ground every field in this before strategy:
+${sourceEvidence(scraped, visionImage?.sourceUrl)}
+
 URL: ${url}
 Account: @${scraped?.ownerUsername ?? "unknown"}
 Followers: ${scraped?.owner?.followersCount ?? "unknown"}
@@ -296,18 +376,36 @@ Comments: ${scraped?.commentsCount ?? "Unknown"}
 ${scraped?.videoViewCount || scraped?.videoPlayCount ? `Views: ${scraped.videoViewCount ?? scraped.videoPlayCount}` : ""}
 Hashtags: ${(scraped?.hashtags ?? []).join(", ") || "none"}
 
+Critical grounding rules:
+- If an image is attached, read it directly and include the actual visible words in contentSummary / hookBreakdown / forensics. Do not summarize around them.
+- If the image contains religious, spiritual, financial, health, or other domain-specific text, preserve that source message as the anchor even when cloning into another niche later.
+- contentSummary must name the exact visible text/message and the main visual subject/context, not a generic category.
+- whyItWorks must cite concrete source evidence: visible words, visual subject, contrast, emotion, layout, caption, or account context.
+- Clones must transform the source's MECHANISM and MESSAGE; they must not become generic content for a niche.
+
 Each clone needs a compelling hook, unique angle, beat-by-beat story structure, ready-to-post caption with line breaks/emojis and CTA, visual direction, and CTA. Never copy source content — use as inspiration only. Output the full JSON for all 5 clones; do not abbreviate with "...".
 
 The "forensics" object is REQUIRED. Be specific and surgical — these data points will be used to recreate the exact formula or generate inspired versions in downstream studios.`;
 
   // Hard timeout so we never silently exceed the dev/edge HTTP window.
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25000);
+  const timer = setTimeout(() => controller.abort(), 45000);
   try {
+    const messages: ModelMessage[] | undefined = visionImage
+      ? [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              { type: "image", image: visionImage.image, mediaType: visionImage.mediaType },
+            ],
+          },
+        ]
+      : undefined;
     const { text } = await generateText({
       model,
       system,
-      prompt,
+      ...(messages ? { messages } : { prompt }),
       abortSignal: controller.signal,
     });
     const parsed = parseJsonish<z.infer<typeof AnalyzeSchema>>(text);
