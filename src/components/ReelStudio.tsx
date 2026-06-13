@@ -745,12 +745,12 @@ export function ReelStudio() {
             </div>
           )}
           {doc?.veoPrompt && (
-            <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+            <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
               {/* Prompts column */}
-              <div className="space-y-4 rounded-2xl border border-border bg-card p-5">
+              <div className="space-y-4 rounded-2xl border border-border bg-card p-5 order-2 lg:order-1">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">VEO 3 prompts</h2>
-                  <Badge className="bg-[#1A73E8] hover:bg-[#1A73E8] text-white">Google VEO 3</Badge>
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Prompt package</h2>
+                  <Badge variant="secondary">Auto-generated</Badge>
                 </div>
 
                 {doc.veoPrompts?.styleConsistencyNotes && (
@@ -810,32 +810,67 @@ export function ReelStudio() {
               </div>
 
               {/* Generate column */}
-              <div className="space-y-4 rounded-2xl border-2 border-accent-primary/40 bg-accent-primary/5 p-5">
+              <div className="space-y-4 rounded-2xl border-2 border-accent-primary/50 bg-accent-primary/5 p-5 order-1 lg:order-2">
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-widest text-accent-primary">Generate in-app</div>
-                  <div className="text-[11px] text-muted-foreground">Powered by fal.ai • VEO 3</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-widest text-accent-primary">Step 3 of 3 — Generate</div>
+                  <h3 className="text-lg font-bold tracking-tight">Pick a model and render</h3>
+                  <p className="text-xs text-muted-foreground">Generates inside the app. No other tools needed.</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                {/* Model cards */}
+                <div>
+                  <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">1. Choose model</Label>
+                  <div className="mt-2 grid gap-2">
+                    {[
+                      { id: "veo3-fast" as const, name: "VEO 3 Fast", price: "~$0.40/s", note: "Best balance — recommended", icon: Zap, time: "~30s" },
+                      { id: "veo3" as const, name: "VEO 3", price: "~$0.75/s", note: "Highest fidelity, native audio", icon: Crown, time: "~60–90s" },
+                      { id: "kling-2.1" as const, name: "Kling 2.1", price: "~$0.10/s", note: "Cheapest, no audio", icon: Sparkle, time: "~45s" },
+                    ].map((m) => {
+                      const Icon = m.icon;
+                      const selected = videoModel === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setVideoModel(m.id)}
+                          className={`text-left rounded-xl border-2 p-3 transition ${
+                            selected
+                              ? "border-accent-primary bg-accent-primary/10"
+                              : "border-border bg-card hover:border-accent-primary/50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon className={`h-4 w-4 ${selected ? "text-accent-primary" : "text-muted-foreground"}`} />
+                            <span className="font-semibold text-sm">{m.name}</span>
+                            <Badge variant="outline" className="ml-auto text-[10px]">{m.price}</Badge>
+                          </div>
+                          <div className="mt-1 text-[11px] text-muted-foreground">{m.note} • {m.time}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Model</Label>
-                    <Select value={videoModel} onValueChange={(v) => setVideoModel(v as any)}>
-                      <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">2. Length</Label>
+                    <Select value={String(videoDuration)} onValueChange={(v) => setVideoDuration(Number(v) as any)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="veo3-fast">VEO 3 Fast (~$0.40/s)</SelectItem>
-                        <SelectItem value="veo3">VEO 3 (~$0.75/s)</SelectItem>
-                        <SelectItem value="kling-2.1">Kling 2.1 (~$0.10/s)</SelectItem>
+                        <SelectItem value="5">5 seconds</SelectItem>
+                        <SelectItem value="8">8 seconds</SelectItem>
+                        <SelectItem value="10">10 seconds</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Length</Label>
-                    <Select value={String(videoDuration)} onValueChange={(v) => setVideoDuration(Number(v) as any)}>
-                      <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Aspect</Label>
+                    <Select value={format} onValueChange={(v) => setFormat(v as any)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="5">5s</SelectItem>
-                        <SelectItem value="8">8s</SelectItem>
-                        <SelectItem value="10">10s</SelectItem>
+                        <SelectItem value="9:16">9:16 Vertical</SelectItem>
+                        <SelectItem value="1:1">1:1 Square</SelectItem>
+                        <SelectItem value="16:9">16:9 Wide</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -844,36 +879,51 @@ export function ReelStudio() {
                 {videoModel !== "kling-2.1" && (
                   <label className="flex items-center gap-2 text-xs text-muted-foreground">
                     <input type="checkbox" checked={videoAudio} onChange={(e) => setVideoAudio(e.target.checked)} />
-                    Generate native audio (VEO 3)
+                    Generate native audio
                   </label>
                 )}
 
-                {(videoStatus === "IN_QUEUE" || videoStatus === "IN_PROGRESS") && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {videoStatus === "IN_QUEUE" ? `Queued${queuePos != null ? ` (#${queuePos})` : ""}…` : "Rendering…"}
+                <Button
+                  size="lg"
+                  className="w-full gradient-accent text-white border-0 hover:opacity-95 text-base font-semibold"
+                  disabled={videoStatus === "IN_QUEUE" || videoStatus === "IN_PROGRESS"}
+                  onClick={() => handleGenerateVideo(doc.veoPrompt!)}
+                >
+                  {videoStatus === "IN_QUEUE" || videoStatus === "IN_PROGRESS" ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {videoStatus === "IN_QUEUE" ? `Queued${queuePos != null ? ` (#${queuePos})` : ""}…` : "Rendering…"}
+                    </>
+                  ) : (
+                    <><Film className="h-5 w-5" /> Generate Video Now</>
+                  )}
+                </Button>
+                <p className="text-[10px] text-center text-muted-foreground">
+                  Usually ready in 30–90 seconds. Stays on this page while it renders.
+                </p>
+
+                {videoError && (
+                  <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+                    {videoError}
                   </div>
                 )}
-
-                {videoError && <p className="text-[11px] text-destructive">{videoError}</p>}
 
                 {videoUrl && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 pt-2 border-t border-border">
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-status-success">✓ Your video is ready</div>
                     <video src={videoUrl} controls playsInline className="w-full rounded-lg border border-border bg-black" />
-                    <Button size="sm" variant="outline" className="w-full" asChild>
-                      <a href={videoUrl} target="_blank" rel="noreferrer" download>
-                        <ExternalLink className="h-3.5 w-3.5" /> Download / Open
-                      </a>
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button size="sm" variant="outline" asChild>
+                        <a href={videoUrl} target="_blank" rel="noreferrer" download>
+                          <ExternalLink className="h-3.5 w-3.5" /> Download
+                        </a>
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setPostOpen(true)}>
+                        <Send className="h-3.5 w-3.5" /> Post Now
+                      </Button>
+                    </div>
                   </div>
                 )}
-
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground pt-2">Or render externally</div>
-                <Button variant="outline" className="w-full" asChild>
-                  <a href="https://aistudio.google.com/" target="_blank" rel="noreferrer">
-                    <ExternalLink className="h-4 w-4" /> Open Google AI Studio
-                  </a>
-                </Button>
               </div>
             </div>
           )}
