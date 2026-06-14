@@ -3,6 +3,7 @@ import { z } from "zod";
 import { generateText } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+import { mediumLabel, MEDIUM_OPENINGS, type ContentMedium } from "@/lib/medium";
 
 const SlideSchema = z.object({
   index: z.number(),
@@ -25,6 +26,8 @@ const CarouselSchema = z.object({
     layout: z.string(),
     mood: z.string(),
     overlays: z.string(),
+    medium: z.string().optional().default(""),
+    mediumLabel: z.string().optional().default(""),
   }),
 });
 
@@ -61,8 +64,24 @@ export const generateCarousel = createServerFn({ method: "POST" })
     const dna = (project.dna_analysis as any) ?? {};
     const prefs = (project.user_preferences as any) ?? {};
     const cloneMode: "exact" | "inspired" = prefs.cloneMode === "inspired" ? "inspired" : "exact";
+    const cloneMethod: string | undefined = prefs.cloneMethod ?? prefs.intent;
     const forensics = (dna.forensics?.carouselForensics ?? dna.forensics ?? null) as any;
     const sourceAccount = project.source_account ?? "unknown";
+    const sourceMedium: ContentMedium | null = (dna as any).contentMedium ?? null;
+    const enforceMedium = cloneMethod === "A1" || (cloneMode === "exact" && !!sourceMedium);
+    const mediumPrimary = String(sourceMedium?.primary ?? "");
+    const mediumOpening = mediumPrimary ? MEDIUM_OPENINGS[mediumPrimary] || "" : "";
+    const mediumBlock = enforceMedium && sourceMedium
+      ? `\nMEDIUM CONSTRAINT — NON-NEGOTIABLE:
+The source post's medium is "${mediumPrimary}" (${sourceMedium.description ?? ""}).
+EVERY slide of this carousel MUST be produced in this exact medium. ${mediumOpening}
+- Do NOT switch to a digital quote card / Canva-style graphic if the source is handwriting, screenshot, UGC, meme, or printed text.
+- The "visualNote" on EVERY slide must describe how to create that slide IN THIS MEDIUM (e.g. "Photograph real handwriting on white paper, flat-lay, natural light").
+- The designBrief.medium field MUST equal "${mediumPrimary}".
+- The designBrief.typography MUST reflect the medium (e.g. for handwriting: "Real human handwriting in dark ink — NOT a digital handwriting font"; for screenshot: "Native iOS/Android system fonts"). Do NOT default to bold sans-serif if the medium is not a digital graphic.\n`
+      : sourceMedium
+      ? `\nSOURCE MEDIUM (advisory only — user may use a different format): "${mediumPrimary}".\n`
+      : "";
 
     const gateway = createLovableAiGatewayProvider(apiKey);
     const model = gateway("google/gemini-3-flash-preview");
@@ -89,6 +108,7 @@ Preserve the source's psychological mechanics (hook power, save-worthiness drive
     const prompt = `Generate a ${data.slideCount}-slide Instagram carousel.
 ${modeBlock}
 ${forensicsBlock}
+${mediumBlock}
 
 Return JSON of exact shape:
 {
@@ -104,7 +124,9 @@ Return JSON of exact shape:
     "typography": string (headline + body font suggestions, weights),
     "layout": string (grid, alignment, padding rules),
     "mood": string (emotional register),
-    "overlays": string (icons, shapes, photo treatments)
+    "overlays": string (icons, shapes, photo treatments),
+    "medium": string (one of the medium category slugs — e.g. "handwriting-on-paper"),
+    "mediumLabel": string (human label e.g. "✍️ Handwriting on paper")
   }
 }
 
@@ -133,6 +155,14 @@ Output the full JSON object only.`;
     try {
       const { text } = await generateText({ model, system, prompt, abortSignal: controller.signal });
       parsed = CarouselSchema.parse(parseJsonish(text));
+      // Backfill medium fields onto the brief so downstream image gen always has them.
+      if (sourceMedium && (!parsed.designBrief.medium || enforceMedium)) {
+        parsed.designBrief.medium = enforceMedium
+          ? mediumPrimary
+          : parsed.designBrief.medium || mediumPrimary;
+        parsed.designBrief.mediumLabel =
+          parsed.designBrief.mediumLabel || mediumLabel(parsed.designBrief.medium);
+      }
     } finally {
       clearTimeout(timer);
     }
