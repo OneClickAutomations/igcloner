@@ -199,6 +199,7 @@ export function ChannelIntelHeader({
 
   const [captionOpen, setCaptionOpen] = useState(false);
   const captionShort = caption && caption.length > 240 ? caption.slice(0, 240) + "…" : caption;
+  const [zoomSrc, setZoomSrc] = useState<string | null>(null);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-ig">
@@ -229,6 +230,21 @@ export function ChannelIntelHeader({
               </div>
             )}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/55 to-transparent" />
+            {thumb && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setZoomSrc(thumb);
+                }}
+                aria-label="Enlarge image"
+                title="Enlarge image"
+                className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white shadow-md backdrop-blur transition hover:bg-black/75 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/70"
+              >
+                <ZoomIn className="h-3.5 w-3.5" />
+              </button>
+            )}
             {isReel && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/95 shadow-lg backdrop-blur transition-transform group-hover:scale-110">
