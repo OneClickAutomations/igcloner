@@ -11,9 +11,11 @@ import {
   AtSign,
   Music2,
   MapPin,
+  ZoomIn,
 } from "lucide-react";
 import { useState } from "react";
 import { proxiedImg } from "@/lib/img-proxy";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 /* ---------- helpers ---------- */
 
@@ -197,6 +199,7 @@ export function ChannelIntelHeader({
 
   const [captionOpen, setCaptionOpen] = useState(false);
   const captionShort = caption && caption.length > 240 ? caption.slice(0, 240) + "…" : caption;
+  const [zoomSrc, setZoomSrc] = useState<string | null>(null);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-ig">
@@ -227,6 +230,21 @@ export function ChannelIntelHeader({
               </div>
             )}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/55 to-transparent" />
+            {thumb && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setZoomSrc(thumb);
+                }}
+                aria-label="Enlarge image"
+                title="Enlarge image"
+                className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white shadow-md backdrop-blur transition hover:bg-black/75 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/70"
+              >
+                <ZoomIn className="h-3.5 w-3.5" />
+              </button>
+            )}
             {isReel && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/95 shadow-lg backdrop-blur transition-transform group-hover:scale-110">
@@ -374,7 +392,18 @@ export function ChannelIntelHeader({
               {carouselSlides.slice(0, 10).map((s: any, i: number) => {
                 const sThumb = proxiedImg(s?.displayUrl || s?.thumbnailUrl || null);
                 return sThumb ? (
-                  <img key={i} src={sThumb} alt={`Slide ${i + 1}`} className="h-12 w-12 rounded-md object-cover" />
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setZoomSrc(sThumb)}
+                    aria-label={`Enlarge slide ${i + 1}`}
+                    className="group relative h-12 w-12 overflow-hidden rounded-md focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                  >
+                    <img src={sThumb} alt={`Slide ${i + 1}`} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                      <ZoomIn className="h-4 w-4 text-white" />
+                    </span>
+                  </button>
                 ) : (
                   <div key={i} className="h-12 w-12 rounded-md bg-muted" />
                 );
@@ -474,6 +503,37 @@ export function ChannelIntelHeader({
           </div>
         </Section>
       )}
+
+      <Dialog open={!!zoomSrc} onOpenChange={(o) => !o && setZoomSrc(null)}>
+        <DialogContent className="max-w-4xl border-0 bg-black/95 p-0 sm:rounded-2xl">
+          {zoomSrc && (
+            <div className="flex flex-col">
+              <div className="flex max-h-[80vh] items-center justify-center overflow-auto bg-black p-2">
+                <img
+                  src={zoomSrc}
+                  alt="Enlarged post"
+                  referrerPolicy="no-referrer"
+                  className="max-h-[78vh] w-auto max-w-full object-contain"
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-3 text-xs text-white/80">
+                <span className="inline-flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  You must be logged into Instagram to view the actual post.
+                </span>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-black transition hover:opacity-90"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> Open on Instagram
+                </a>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
