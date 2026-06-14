@@ -503,6 +503,37 @@ export function ChannelIntelHeader({
           </div>
         </Section>
       )}
+
+      <Dialog open={!!zoomSrc} onOpenChange={(o) => !o && setZoomSrc(null)}>
+        <DialogContent className="max-w-4xl border-0 bg-black/95 p-0 sm:rounded-2xl">
+          {zoomSrc && (
+            <div className="flex flex-col">
+              <div className="flex max-h-[80vh] items-center justify-center overflow-auto bg-black p-2">
+                <img
+                  src={zoomSrc}
+                  alt="Enlarged post"
+                  referrerPolicy="no-referrer"
+                  className="max-h-[78vh] w-auto max-w-full object-contain"
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-3 text-xs text-white/80">
+                <span className="inline-flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  You must be logged into Instagram to view the actual post.
+                </span>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-black transition hover:opacity-90"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> Open on Instagram
+                </a>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
