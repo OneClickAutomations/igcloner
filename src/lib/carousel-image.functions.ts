@@ -87,7 +87,17 @@ Always end with: "1:1 square, 1080x1080, Instagram-ready, no borders, no Instagr
     const enhanceUser = `Carousel: "${doc.title}"
 Slide ${slide.index} of ${doc.slides.length} — role: ${slide.role}.
 
-TEXT TO RENDER ON THE SLIDE (verbatim, perfect spelling):
+${
+      mediumCtx.primary
+        ? `MEDIUM FOR THIS SLIDE (A1 clone of source — must match the source post's format):
+→ ${mediumLabel(mediumCtx.primary)} (${mediumCtx.primary})
+${sourceMedium?.description ? `Source-format notes: ${sourceMedium.description}` : ""}
+${sourceMedium?.replicationInstructions ? `How to recreate: ${sourceMedium.replicationInstructions}` : ""}
+The first sentence of the prompt you write MUST establish this medium concretely.
+
+`
+        : ""
+    }TEXT TO RENDER ON THE SLIDE (verbatim, perfect spelling):
 - Headline: """${slide.headline}"""
 - Body: """${slide.body}"""
 
