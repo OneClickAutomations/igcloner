@@ -674,6 +674,14 @@ export function CarouselStudio() {
                     <dd className="mt-1 text-sm text-foreground">{doc.designBrief[key]}</dd>
                   </div>
                 ))}
+                {(doc.designBrief as any).mediumLabel || (doc.designBrief as any).medium ? (
+                  <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 sm:col-span-2">
+                    <dt className="text-[10px] font-semibold uppercase tracking-wider text-primary">Medium (preserved from source)</dt>
+                    <dd className="mt-1 text-sm text-foreground">
+                      {(doc.designBrief as any).mediumLabel || (doc.designBrief as any).medium}
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
             </div>
           </section>
