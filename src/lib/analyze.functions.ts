@@ -412,7 +412,19 @@ const AnalyzeSchema = z.object({
         audioStyle: z.string().optional(),
         productionLevel: z.string().optional(),
         platformAesthetic: z.string().optional(),
-        recreationInstructions: z.string().optional(),
+        recreationInstructions: z
+          .union([z.string(), z.array(z.string())])
+          .transform((v) =>
+            Array.isArray(v)
+              ? v
+                  .map((s, i) => {
+                    const t = String(s).trim();
+                    return /^\d+[.)]/.test(t) ? t : `${i + 1}. ${t}`;
+                  })
+                  .join("\n")
+              : v,
+          )
+          .optional(),
       })
       .optional(),
   }),
