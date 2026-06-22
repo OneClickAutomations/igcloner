@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { generateAngles, setDefaultNiche, type Angle } from "@/lib/angles.functions";
 import { uploadReferenceImage } from "@/lib/reference-upload.functions";
 import { createProject } from "@/lib/projects.functions";
+import { POST_GOALS, type PostGoal } from "@/lib/post-goals";
+import { PLATFORM_LIST, type SocialPlatform } from "@/lib/platform-voice";
 
 type CloneMethod = "A1" | "A2" | "A3";
 type OutputFormat = "image" | "reel" | "carousel";
@@ -19,11 +21,6 @@ const NICHES = [
   "Travel", "Motivation & Mindset", "Education", "Real Estate",
   "Entertainment", "Tech & Gaming", "Parenting", "Lifestyle",
   "Music & Arts", "Sports",
-];
-const GOALS = [
-  "Grow my followers", "Drive traffic to my link in bio", "Sell a product or service",
-  "Build authority in my niche", "Attract brand deals", "Increase engagement",
-  "Build my email list", "Grow a community",
 ];
 const TONES = [
   "Motivational & high energy", "Professional & authoritative", "Friendly & conversational",
