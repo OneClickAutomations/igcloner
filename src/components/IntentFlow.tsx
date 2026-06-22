@@ -118,7 +118,7 @@ export function IntentFlow({ analysisId }: Props) {
   }, [loading]);
 
   const selectedNiche = niche === "__custom__" ? customNiche.trim() : niche;
-  const canGenerate = !!cloneMethod && !!outputFormat && !!selectedNiche && !!goal && !loading;
+  const canGenerate = !!cloneMethod && !!outputFormat && !!goal && !loading;
 
   const addKeyword = () => {
     const k = keywordInput.trim();
@@ -160,7 +160,7 @@ export function IntentFlow({ analysisId }: Props) {
   };
 
   const generate = async () => {
-    if (!cloneMethod || !outputFormat || !selectedNiche || !goal) return;
+    if (!cloneMethod || !outputFormat || !goal) return;
     setLoading(true);
     setAngles(null);
     setSelectedIdx(null);
@@ -177,7 +177,7 @@ export function IntentFlow({ analysisId }: Props) {
       const res: any = await genFn({
         data: {
           analysisId,
-          niche: selectedNiche,
+          niche: selectedNiche || undefined,
           intent: cloneMethod,
           outputFormat,
           preferences: {
@@ -193,7 +193,9 @@ export function IntentFlow({ analysisId }: Props) {
         },
       });
       setAngles(res.angles);
-      nicheFn({ data: { niche: selectedNiche } }).catch(() => {});
+      if (selectedNiche) {
+        nicheFn({ data: { niche: selectedNiche } }).catch(() => {});
+      }
     } catch (e: any) {
       toast.error(e?.message || "Couldn't generate angles");
     } finally {
