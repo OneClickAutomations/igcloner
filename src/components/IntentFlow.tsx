@@ -577,17 +577,82 @@ export function IntentFlow({ analysisId }: Props) {
           </div>
 
           {selectedIdx !== null && outputFormat && (
+            <>
+            {/* Platform picker — same image, copy adapts per platform */}
+            <div className="animate-in fade-in slide-in-from-bottom-2 rounded-2xl border border-border bg-card p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold">Where are you posting this?</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Same image everywhere — copy adapts to match each platform's voice.
+                  </p>
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlatforms(PLATFORM_LIST.map((p) => p.key))}
+                    className="rounded-md border border-border px-2 py-1 text-[11px] hover:border-strong"
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlatforms([])}
+                    className="rounded-md border border-border px-2 py-1 text-[11px] hover:border-strong"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                {PLATFORM_LIST.map((p) => {
+                  const active = selectedPlatforms.includes(p.key);
+                  return (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() =>
+                        setSelectedPlatforms((prev) =>
+                          prev.includes(p.key) ? prev.filter((k) => k !== p.key) : [...prev, p.key],
+                        )
+                      }
+                      className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-xs transition-all ${
+                        active
+                          ? "border-transparent bg-accent-primary/10 ring-2 ring-accent-primary"
+                          : "border-border bg-background hover:border-strong"
+                      }`}
+                    >
+                      <span className="text-base leading-none">{p.icon}</span>
+                      <span className="font-medium">{p.platform}</span>
+                      {active && <Check className="ml-auto h-3.5 w-3.5 text-accent-primary" />}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                ℹ Simultaneous auto-posting coming soon. For now, IGCloner generates platform-perfect copy you can copy &amp; post.
+              </p>
+            </div>
+
             <div className="animate-in fade-in slide-in-from-bottom-2 rounded-2xl border border-accent-primary/30 bg-accent-primary/5 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm">
                   <p className="font-semibold">Ready to build "{angles[selectedIdx].angleName}"</p>
-                  <p className="text-xs text-muted-foreground">Opens the {outputFormat} studio with this angle and your preferences pre-loaded.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Opens the {outputFormat} studio with {selectedPlatforms.length || 0} platform
+                    {selectedPlatforms.length === 1 ? "" : "s"} pre-loaded.
+                  </p>
                 </div>
-                <Button onClick={openStudio} disabled={!!openingFormat} className="gap-2">
+                <Button
+                  onClick={openStudio}
+                  disabled={!!openingFormat || selectedPlatforms.length === 0}
+                  className="gap-2"
+                >
                   {openingFormat ? <><Loader2 className="h-4 w-4 animate-spin" /> Opening…</> : <>Open {outputFormat} Studio <Sparkles className="h-4 w-4" /></>}
                 </Button>
               </div>
             </div>
+            </>
           )}
         </div>
       )}
