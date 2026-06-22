@@ -768,24 +768,116 @@ export function IntentFlow({ analysisId }: Props) {
               </p>
             </div>
 
-            <div className="animate-in fade-in slide-in-from-bottom-2 rounded-2xl border border-accent-primary/30 bg-accent-primary/5 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm">
-                  <p className="font-semibold">Ready to build "{angles[selectedIdx].angleName}"</p>
+            {cloneMethod === "A1" && outputFormat === "image" ? (
+              <div className="animate-in fade-in slide-in-from-bottom-2 space-y-4 rounded-2xl border border-accent-primary/30 bg-accent-primary/5 p-4">
+                <div>
+                  <p className="text-sm font-semibold">One-click clone — "{angles[selectedIdx].angleName}"</p>
                   <p className="text-xs text-muted-foreground">
-                    Opens the {outputFormat} studio with {selectedPlatforms.length || 0} platform
-                    {selectedPlatforms.length === 1 ? "" : "s"} pre-loaded.
+                    Same image style as the source. Your text overlay and branding. No extra steps.
                   </p>
                 </div>
-                <Button
-                  onClick={openStudio}
-                  disabled={!!openingFormat || selectedPlatforms.length === 0}
-                  className="gap-2"
-                >
-                  {openingFormat ? <><Loader2 className="h-4 w-4 animate-spin" /> Opening…</> : <>Open {outputFormat} Studio <Sparkles className="h-4 w-4" /></>}
-                </Button>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your @handle</label>
+                    <input
+                      value={quickHandle}
+                      onChange={(e) => setQuickHandle(e.target.value)}
+                      placeholder="@yourbrand"
+                      className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Logo (optional)</label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <input
+                        ref={quickLogoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleQuickLogo(e.target.files)}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => quickLogoInputRef.current?.click()}
+                        disabled={quickLogoUploading}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:border-strong disabled:opacity-60"
+                      >
+                        {quickLogoUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                        {quickLogoUrl ? "Replace logo" : "Upload logo"}
+                      </button>
+                      {quickLogoUrl && (
+                        <>
+                          <img src={quickLogoUrl} alt="logo" className="h-6 w-6 rounded object-contain bg-background border border-border" />
+                          <button onClick={() => setQuickLogoUrl(null)} aria-label="remove" className="text-muted-foreground hover:text-foreground">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Text overlay</label>
+                  <textarea
+                    value={quickOverlay}
+                    onChange={(e) => setQuickOverlay(e.target.value.slice(0, 200))}
+                    placeholder="The text rendered on the image"
+                    className="mt-1 min-h-[60px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Button onClick={quickGenerate} disabled={quickGenerating} className="gap-2">
+                    {quickGenerating ? <><Loader2 className="h-4 w-4 animate-spin" /> Cloning image…</> : <><Sparkles className="h-4 w-4" /> Generate cloned image</>}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={openStudio} disabled={!!openingFormat}>
+                    {openingFormat ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Opening…</> : <>Advanced edit in studio <ChevronDown className="h-3.5 w-3.5 -rotate-90" /></>}
+                  </Button>
+                </div>
+
+                {quickImageUrl && (
+                  <div className="mt-2 rounded-xl border border-border bg-background p-3">
+                    <div className="relative mx-auto w-full max-w-sm overflow-hidden rounded-lg bg-muted aspect-[4/5]">
+                      <img src={quickImageUrl} alt="Generated" className="absolute inset-0 h-full w-full object-cover" />
+                      {(quickHandle || quickLogoUrl) && (
+                        <div className="absolute flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-white text-xs backdrop-blur-sm" style={POSITION_STYLES["bottom-right"] as any}>
+                          {quickLogoUrl && <img src={quickLogoUrl} alt="logo" className="h-4 w-4 rounded object-contain" />}
+                          {quickHandle && <span className="font-medium">{quickHandle}</span>}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-3 flex justify-center gap-2">
+                      <Button size="sm" onClick={downloadQuick} className="gap-1.5">Download</Button>
+                      <Button size="sm" variant="outline" onClick={quickGenerate} disabled={quickGenerating} className="gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5" /> Regenerate
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={openStudio} disabled={!!openingFormat}>Open in studio</Button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="animate-in fade-in slide-in-from-bottom-2 rounded-2xl border border-accent-primary/30 bg-accent-primary/5 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-sm">
+                    <p className="font-semibold">Ready to build "{angles[selectedIdx].angleName}"</p>
+                    <p className="text-xs text-muted-foreground">
+                      Opens the {outputFormat} studio with {selectedPlatforms.length || 0} platform
+                      {selectedPlatforms.length === 1 ? "" : "s"} pre-loaded.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={openStudio}
+                    disabled={!!openingFormat || selectedPlatforms.length === 0}
+                    className="gap-2"
+                  >
+                    {openingFormat ? <><Loader2 className="h-4 w-4 animate-spin" /> Opening…</> : <>Open {outputFormat} Studio <Sparkles className="h-4 w-4" /></>}
+                  </Button>
+                </div>
+              </div>
+            )}
             </>
           )}
         </div>
