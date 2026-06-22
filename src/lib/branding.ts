@@ -95,3 +95,17 @@ export function getSlideSwipeIndicator(
   const out = tpl.render();
   return out || null;
 }
+
+/**
+ * Suggest a branding corner that avoids the text overlay zone.
+ * - text in top third  -> branding bottom-right
+ * - text in bottom third -> branding top-right
+ * - center text -> branding bottom-right (default)
+ */
+export function suggestBrandingPosition(
+  textOverlayPosition: "top" | "center" | "bottom" | null | undefined,
+): BrandingPosition {
+  if (textOverlayPosition === "top") return "bottom-right";
+  if (textOverlayPosition === "bottom") return "top-right";
+  return "bottom-right";
+}
