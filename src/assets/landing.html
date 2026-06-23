@@ -664,6 +664,8 @@ track.addEventListener('mousemove',e=>{if(!isDown)return;e.preventDefault();trac
 let auto=setInterval(()=>{track.scrollLeft+=1;if(track.scrollLeft>=track.scrollWidth-track.clientWidth)track.scrollLeft=0;},20);
 track.addEventListener('mouseenter',()=>clearInterval(auto));
 track.addEventListener('mouseleave',()=>{auto=setInterval(()=>{track.scrollLeft+=1;if(track.scrollLeft>=track.scrollWidth-track.clientWidth)track.scrollLeft=0;},20);});
+function toggleMobileMenu(){document.getElementById('mobileMenu').classList.toggle('open');}
+function closeMobileMenu(){document.getElementById('mobileMenu').classList.remove('open');}
 </script>
 </body>
 </html>
