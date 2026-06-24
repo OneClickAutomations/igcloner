@@ -474,6 +474,87 @@ export function IntentFlow({ analysisId }: Props) {
             </div>
           )}
 
+          {/* Context + uploads — surfaced directly under the creative brief for
+              Reimagine the Scene (A3) and Remix the Message (A2). If filled, the
+              AI uses this prompt to steer angle generation; if empty, the AI
+              decides everything. A1 keeps its context inside Advanced Features. */}
+          {(cloneMethod === "A3" || cloneMethod === "A2") && (
+            <div className="rounded-xl border border-accent-primary/30 bg-accent-primary/5 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-accent-primary" />
+                  <p className="text-sm font-semibold">Give the AI more context (optional)</p>
+                </div>
+                <EnhanceButton
+                  value={description}
+                  onChange={setDescription}
+                  kind="generic"
+                  context={`Clone method: ${CLONE_LABEL[cloneMethod]}. Format: ${outputFormat ?? "tbd"}. Niche: ${selectedNiche ?? "unspecified"}.`}
+                />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {cloneMethod === "A3"
+                  ? "Steer the direction, or leave blank and let the AI decide everything."
+                  : "Describe the visual concept you want, or leave blank to let the AI surprise you."}
+              </p>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value.slice(0, 3000))}
+                placeholder={cloneMethod === "A3"
+                  ? 'e.g. "lean into the underdog angle" or "make it feel premium" — or leave blank'
+                  : 'Describe the visual concept you want, or leave blank'}
+                rows={4}
+                className="mt-3 w-full resize-none rounded-lg border border-border bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+              />
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,.txt,.md,text/plain,text/markdown"
+                  onChange={(e) => handleFiles(e.target.files)}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:border-strong disabled:opacity-60"
+                >
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  Upload image or .txt
+                </button>
+                <span className="text-[11px] text-muted-foreground">
+                  Images (max 10MB) used as visual reference · .txt/.md (max 200KB) as text context
+                </span>
+              </div>
+              {(uploadedImages.length > 0 || uploadedDocs.length > 0) && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {uploadedImages.map((img) => (
+                    <span key={img.url} className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px]">
+                      <ImageIcon className="h-3 w-3" />{img.name}
+                      <button onClick={() => setUploadedImages((p) => p.filter((x) => x.url !== img.url))} aria-label="remove">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                  {uploadedDocs.map((d) => (
+                    <span key={d.name} className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px]">
+                      <FileText className="h-3 w-3" />{d.name}
+                      <button onClick={() => setUploadedDocs((p) => p.filter((x) => x.name !== d.name))} aria-label="remove">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <p className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+                <Sparkles className="h-3 w-3 text-accent-primary" />
+                Filled in? The AI uses your prompt to generate the 5 angles. Blank? It decides for you.
+              </p>
+            </div>
+          )}
+
           <div className="border-t border-border" />
 
           {/* Goal — always visible & required (drives copy direction) */}
