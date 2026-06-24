@@ -822,7 +822,37 @@ export function ReelStudio() {
           </div>
         </TabsContent>
 
-        {/* TAB 3 — GENERATE VIDEO */}
+        {/* TAB 4 — AUDIO ENGINE */}
+        <TabsContent value="audio" className="mt-4">
+          <AudioEngine
+            projectId={projectId}
+            imageUrl={
+              doc?.sourceImageUrl ||
+              (project.data as any)?.source_thumbnail ||
+              (project.data as any)?.user_preferences?.referenceImageUrl ||
+              undefined
+            }
+            angle={angle}
+            stylePreset={stylePreset}
+            initialPlan={audioPlan}
+            initialMix={mixProfile}
+            onChange={(plan, mix) => {
+              setAudioPlan(plan);
+              setMixProfile(mix);
+            }}
+          />
+          <div className="mt-5 flex justify-end">
+            <Button
+              onClick={() => setTab("video")}
+              disabled={!doc?.hook}
+              className="gradient-accent text-white border-0"
+            >
+              Next: Generate Video <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </TabsContent>
+
+        {/* TAB 5 — GENERATE VIDEO */}
         <TabsContent value="video" className="mt-4">
           {!doc?.veoPrompt && (
             <div className="rounded-2xl border border-border bg-card p-8 text-sm text-muted-foreground">
