@@ -464,17 +464,25 @@ export function ReelStudio() {
       )}
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="direction" className="gap-1.5">
             <Eye className="h-3.5 w-3.5" /> 1. Visual Direction
             {direction?.approved && <Check className="h-3 w-3 text-status-success" />}
           </TabsTrigger>
+          <TabsTrigger value="style" className="gap-1.5">
+            <Crown className="h-3.5 w-3.5" /> 2. Reel Style
+            {stylePreset && <Check className="h-3 w-3 text-status-success" />}
+          </TabsTrigger>
           <TabsTrigger value="script" disabled={!direction?.approved} className="gap-1.5">
-            <Sparkles className="h-3.5 w-3.5" /> 2. Script
+            <Sparkles className="h-3.5 w-3.5" /> 3. Script
             {doc?.hook && <Check className="h-3 w-3 text-status-success" />}
           </TabsTrigger>
+          <TabsTrigger value="audio" className="gap-1.5">
+            <Sparkle className="h-3.5 w-3.5" /> 4. Audio
+            {audioPlan?.mode && <Check className="h-3 w-3 text-status-success" />}
+          </TabsTrigger>
           <TabsTrigger value="video" disabled={!doc?.hook} className="gap-1.5">
-            <Film className="h-3.5 w-3.5" /> 3. Generate Video
+            <Film className="h-3.5 w-3.5" /> 5. Generate
           </TabsTrigger>
         </TabsList>
 
