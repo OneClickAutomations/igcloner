@@ -195,14 +195,15 @@ export function ReelStudio() {
     const t = setTimeout(() => {
       lastSavedRef.current = snapshot;
       const patch: any = {};
-      if (doc) patch.project_data = { ...doc, visualDirection: direction ?? doc.visualDirection };
-      else if (direction) patch.project_data = { visualDirection: direction };
+      const audioBits = { stylePreset, audioPlan, mixProfile };
+      if (doc) patch.project_data = { ...doc, visualDirection: direction ?? doc.visualDirection, ...audioBits };
+      else if (direction) patch.project_data = { visualDirection: direction, ...audioBits };
       if (!patch.project_data) return;
       patch.status = doc?.hook ? "in_progress" : "draft";
       updateProjectFn({ data: { id: projectId, patch } }).catch(() => {});
     }, 1500);
     return () => clearTimeout(t);
-  }, [doc, direction, projectId, updateProjectFn]);
+  }, [doc, direction, projectId, updateProjectFn, stylePreset, audioPlan, mixProfile]);
 
   useEffect(() => {
     const onBeforeUnload = () => {
@@ -273,7 +274,18 @@ export function ReelStudio() {
   const handleSave = async () => {
     if (!doc) return;
     try {
-      await saveFn({ data: { projectId, reel: { ...doc, visualDirection: direction ?? doc.visualDirection } } });
+      await saveFn({
+        data: {
+          projectId,
+          reel: {
+            ...doc,
+            visualDirection: direction ?? doc.visualDirection,
+            stylePreset,
+            audioPlan,
+            mixProfile,
+          } as any,
+        },
+      });
       toast.success("Project saved");
     } catch (e: any) {
       toast.error(e?.message || "Save failed");
