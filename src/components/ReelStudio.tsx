@@ -428,19 +428,23 @@ export function ReelStudio() {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <Button variant="ghost" size="sm" onClick={handleSave} disabled={!doc && !direction} className="hidden sm:inline-flex">
+          <Button variant="ghost" size="sm" onClick={handleSave} disabled={!doc && !direction} className="hidden md:inline-flex">
             Save
           </Button>
           {doc && (
-            <Button variant="ghost" size="sm" className="hidden md:inline-flex"
+            <Button variant="ghost" size="sm" className="hidden lg:inline-flex"
               onClick={() => navigate({ to: "/studio/voiceover", search: { projectId: project.data!.id } })}>
               <Sparkles className="h-3.5 w-3.5" /> Voiceover
             </Button>
           )}
           {doc && (
-            <Button size="sm" onClick={() => setPostOpen(true)}>
-              <Send className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Post</span>
+            <Button size="icon" onClick={() => setPostOpen(true)} aria-label="Post" className="sm:hidden">
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
+          {doc && (
+            <Button size="sm" onClick={() => setPostOpen(true)} className="hidden sm:inline-flex">
+              <Send className="h-3.5 w-3.5" /> Post
             </Button>
           )}
           <Button
