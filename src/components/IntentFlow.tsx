@@ -480,10 +480,10 @@ export function IntentFlow({ analysisId }: Props) {
               decides everything. A1 keeps its context inside Advanced Features. */}
           {(cloneMethod === "A3" || cloneMethod === "A2") && (
             <div className="rounded-xl border border-accent-primary/30 bg-accent-primary/5 p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <Sparkles className="h-4 w-4 text-accent-primary" />
-                  <p className="text-sm font-semibold">Give the AI more context (optional)</p>
+                  <p className="text-sm font-semibold leading-tight">Give the AI more context (optional)</p>
                 </div>
                 <EnhanceButton
                   value={description}
@@ -609,12 +609,12 @@ export function IntentFlow({ analysisId }: Props) {
               selected={niche && niche !== "__custom__" ? niche : null}
               onSelect={(v) => { setNiche(v); setCustomNiche(""); }}
             />
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <input
                 value={customNiche}
                 onChange={(e) => { setCustomNiche(e.target.value); setNiche("__custom__"); }}
                 placeholder="Or type your own niche…"
-                className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+                className="min-w-[180px] flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
               />
               <EnhanceButton
                 value={customNiche}
