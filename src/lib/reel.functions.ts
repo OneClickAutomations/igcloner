@@ -718,7 +718,7 @@ export const regenerateVeoPrompt = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!project?.project_data) throw new Error("Generate a reel first");
 
-    const doc = project.project_data as ReelDoc;
+    const doc = project.project_data as unknown as ReelDoc;
     const direction = doc.visualDirection;
     const gateway = createLovableAiGatewayProvider(apiKey);
     const model = gateway("google/gemini-2.5-flash");
