@@ -125,6 +125,17 @@ export type ReelDoc = z.infer<typeof ReelSchema> & {
   veoPrompt?: string; // legacy single-string master (kept for back-compat)
   veoPrompts?: z.infer<typeof VeoPromptsSchema>;
   visualDirection?: VisualDirection;
+  sourceImageUrl?: string | null;
+  motionStrategy?: {
+    contentType: string;
+    confidence: "high" | "medium" | "low";
+    preservationTargetPct: number;
+    cameraMotion: string;
+    environmentalMotion: string;
+    secondaryMotion: string;
+    subjectMotion: string;
+    notes: string;
+  };
 };
 
 const SettingsSchema = z.object({
@@ -338,6 +349,25 @@ function buildNegativePrompt(direction: VisualDirection): string {
     "ugly",
     "bad quality",
   );
+  // Identity / structure preservation — anti-AI quality filter.
+  // These run on every reel because the source image is the visual anchor.
+  negatives.push(
+    "morphing",
+    "melting",
+    "warping",
+    "body distortion",
+    "face distortion",
+    "identity drift",
+    "object duplication",
+    "extra limbs",
+    "extra fingers",
+    "floating objects",
+    "hallucinated elements",
+    "random scene change",
+    "subject replaced",
+    "different person",
+    "different product",
+  );
   return Array.from(new Set(negatives)).join(", ");
 }
 
@@ -392,6 +422,16 @@ export const generateReel = createServerFn({ method: "POST" })
     }
     const visionImage = scraped ? await fetchVisionImage(scraped) : null;
     const sourceBlock = buildSourceContextBlock(scraped ?? {}, dna, !!visionImage);
+
+    // The source image URL we hand to fal as the first-frame anchor.
+    // Priority: explicit user upload → scraped post thumbnail/displayUrl.
+    const sourceImageUrl: string | null =
+      (prefs as any).referenceImageUrl ||
+      (prefs as any).uploadedImageUrl ||
+      (project as any).source_thumbnail ||
+      (scraped as any)?.displayUrl ||
+      (scraped as any)?.thumbnailUrl ||
+      null;
 
     const effectiveAngle =
       data.angle ||
@@ -539,11 +579,77 @@ Return ONLY this JSON:
       veoPrompts?.masterPrompt ??
       `${visualDirection.platformAesthetic} ${visualDirection.backgroundDescription}. Colors: ${(visualDirection.colorPalette.approximateHex ?? []).join(", ")}. ${visualDirection.lightingStyle} lighting. ${parsed.hook.visualNote}. Vertical ${settings.format}. ${settings.duration}s.`;
 
+    // Image-anchored motion planner — derive a conservative motion
+    // strategy from the visual direction so prompts emphasize animating
+    // the source image rather than reimagining it.
+    const subj = visualDirection.subjectType;
+    let confidence: "high" | "medium" | "low" = "high";
+    if (
+      subj === "person-lifestyle" ||
+      subj === "person-athlete" ||
+      subj === "person-business"
+    ) {
+      confidence = "medium";
+    }
+    if (visualDirection.contentFormat === "talking-head") {
+      confidence = "low";
+    }
+    const motionStrategy = {
+      contentType: subj,
+      confidence,
+      preservationTargetPct: 90,
+      cameraMotion:
+        confidence === "low"
+          ? "slow cinematic push-in, micro parallax only"
+          : "slow push-in or gentle orbit, subtle parallax",
+      environmentalMotion:
+        "drifting light, ambient particles, soft atmospheric haze, gentle background motion",
+      secondaryMotion:
+        "hair, clothing, leaves, reflections, fabric — subtle natural sway only",
+      subjectMotion:
+        confidence === "low"
+          ? "no subject animation — camera movement only"
+          : "natural breathing, slow blink, micro head movement — never reshape the subject",
+      notes:
+        "Animate the attached image — do not replace, restyle, or reimagine it. Preserve identity, faces, products, composition, branding, and colors. Motion must feel like a professional motion designer animated the still.",
+    };
+
+    const imageAnchorBlock = sourceImageUrl
+      ? `\n\nIMAGE-ANCHORED GENERATION (CRITICAL):\n- A SOURCE IMAGE is attached to the video job and MUST be used as the literal first frame and visual anchor of the generated video.\n- DO NOT replace, restyle, or reimagine the image. Animate what is already in it.\n- Preserve identity: faces, people, products, objects, composition, environment, branding, colors, lighting direction.\n- Apply motion using this hierarchy (start conservative, escalate only if needed):\n  1) Camera motion — ${motionStrategy.cameraMotion}\n  2) Environmental motion — ${motionStrategy.environmentalMotion}\n  3) Secondary motion — ${motionStrategy.secondaryMotion}\n  4) Subject motion — ${motionStrategy.subjectMotion}\n- Confidence: ${motionStrategy.confidence}. Target image-preservation score ≥ ${motionStrategy.preservationTargetPct}/100.\n- Every prompt must describe motion that is plausible inside the source image's existing scene.\n- ${motionStrategy.notes}`
+      : "";
+
+    const anchoredMaster = sourceImageUrl
+      ? `${masterPrompt}${imageAnchorBlock}`
+      : masterPrompt;
+
+    // Inject the image-anchor block into every per-scene/per-prompt prompt so
+    // the model running fal sees it regardless of which prompt the user fires.
+    const anchoredVeoPrompts = veoPrompts && sourceImageUrl
+      ? {
+          ...veoPrompts,
+          masterPrompt: anchoredMaster,
+          hookPrompt: {
+            ...veoPrompts.hookPrompt,
+            prompt: `${veoPrompts.hookPrompt.prompt}${imageAnchorBlock}`,
+          },
+          scenePrompts: veoPrompts.scenePrompts.map((p) => ({
+            ...p,
+            prompt: `${p.prompt}${imageAnchorBlock}`,
+          })),
+          ctaPrompt: {
+            ...veoPrompts.ctaPrompt,
+            prompt: `${veoPrompts.ctaPrompt.prompt}${imageAnchorBlock}`,
+          },
+        }
+      : veoPrompts;
+
     const doc: ReelDoc = {
       ...parsed,
-      veoPrompt: masterPrompt,
-      veoPrompts: veoPrompts ?? undefined,
+      veoPrompt: anchoredMaster,
+      veoPrompts: anchoredVeoPrompts ?? undefined,
       visualDirection: { ...visualDirection, approved: true },
+      sourceImageUrl,
+      motionStrategy,
     };
 
     const { data: updated, error: uErr } = await supabase
