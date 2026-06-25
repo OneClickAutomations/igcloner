@@ -22,7 +22,7 @@ const items = [
   { title: "Publishing", url: "/publishing", icon: Send },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Calendar", url: "/calendar", icon: CalendarIcon },
-  { title: "Settings", url: "/settings", icon: SettingsIcon },
+  { title: "Settings & Integrations", url: "/settings", icon: SettingsIcon },
 ] as const;
 
 export function AppSidebar() {

@@ -14,6 +14,174 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_link_clicks: {
+        Row: {
+          clicked_at: string
+          id: string
+          provider: string
+          source_location: string | null
+          user_id: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          id?: string
+          provider: string
+          source_location?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          id?: string
+          provider?: string
+          source_location?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      publishing_settings: {
+        Row: {
+          auto_publish_enabled: boolean
+          caption_preference: string
+          default_cta: string | null
+          default_platforms: string[]
+          default_post_times: Json
+          default_scheduling_mode: string
+          hashtag_preference: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_publish_enabled?: boolean
+          caption_preference?: string
+          default_cta?: string | null
+          default_platforms?: string[]
+          default_post_times?: Json
+          default_scheduling_mode?: string
+          hashtag_preference?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_publish_enabled?: boolean
+          caption_preference?: string
+          default_cta?: string | null
+          default_platforms?: string[]
+          default_post_times?: Json
+          default_scheduling_mode?: string
+          hashtag_preference?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      publishing_templates: {
+        Row: {
+          caption_template: string | null
+          created_at: string
+          hashtag_set: string[] | null
+          id: string
+          name: string
+          platforms: string[] | null
+          user_id: string
+        }
+        Insert: {
+          caption_template?: string | null
+          created_at?: string
+          hashtag_set?: string[] | null
+          id?: string
+          name: string
+          platforms?: string[] | null
+          user_id: string
+        }
+        Update: {
+          caption_template?: string | null
+          created_at?: string
+          hashtag_set?: string[] | null
+          id?: string
+          name?: string
+          platforms?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_api_keys: {
+        Row: {
+          created_at: string
+          encrypted_key: string
+          id: string
+          key_last_four: string | null
+          last_valid_at: string | null
+          last_validated_at: string | null
+          last_validation_error: string | null
+          metadata: Json
+          provider: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_key: string
+          id?: string
+          key_last_four?: string | null
+          last_valid_at?: string | null
+          last_validated_at?: string | null
+          last_validation_error?: string | null
+          metadata?: Json
+          provider: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_key?: string
+          id?: string
+          key_last_four?: string | null
+          last_valid_at?: string | null
+          last_validated_at?: string | null
+          last_validation_error?: string | null
+          metadata?: Json
+          provider?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          default_caption_style: string | null
+          default_language: string | null
+          default_platform: string | null
+          default_reel_style: string | null
+          default_voice_id: string | null
+          theme: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          default_caption_style?: string | null
+          default_language?: string | null
+          default_platform?: string | null
+          default_reel_style?: string | null
+          default_voice_id?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          default_caption_style?: string | null
+          default_language?: string | null
+          default_platform?: string | null
+          default_reel_style?: string | null
+          default_voice_id?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       analyses: {
         Row: {
           created_at: string | null
