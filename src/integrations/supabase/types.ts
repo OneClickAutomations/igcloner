@@ -102,6 +102,45 @@ export type Database = {
           },
         ]
       }
+      analytics_snapshots: {
+        Row: {
+          fetched_at: string | null
+          followers_count: number | null
+          id: string
+          impressions: number | null
+          platform: string
+          profile_views: number | null
+          raw_response: Json | null
+          reach: number | null
+          snapshot_date: string
+          user_id: string
+        }
+        Insert: {
+          fetched_at?: string | null
+          followers_count?: number | null
+          id?: string
+          impressions?: number | null
+          platform: string
+          profile_views?: number | null
+          raw_response?: Json | null
+          reach?: number | null
+          snapshot_date?: string
+          user_id: string
+        }
+        Update: {
+          fetched_at?: string | null
+          followers_count?: number | null
+          id?: string
+          impressions?: number | null
+          platform?: string
+          profile_views?: number | null
+          raw_response?: Json | null
+          reach?: number | null
+          snapshot_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_items: {
         Row: {
           caption: string | null
@@ -242,6 +281,65 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_analytics: {
+        Row: {
+          comments: number | null
+          engagement_rate: number | null
+          id: string
+          impressions: number | null
+          last_fetched_at: string | null
+          likes: number | null
+          platform: string
+          platform_post_id: string | null
+          publishing_result_id: string | null
+          raw_response: Json | null
+          reach: number | null
+          saves: number | null
+          shares: number | null
+          user_id: string
+        }
+        Insert: {
+          comments?: number | null
+          engagement_rate?: number | null
+          id?: string
+          impressions?: number | null
+          last_fetched_at?: string | null
+          likes?: number | null
+          platform: string
+          platform_post_id?: string | null
+          publishing_result_id?: string | null
+          raw_response?: Json | null
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          user_id: string
+        }
+        Update: {
+          comments?: number | null
+          engagement_rate?: number | null
+          id?: string
+          impressions?: number | null
+          last_fetched_at?: string | null
+          likes?: number | null
+          platform?: string
+          platform_post_id?: string | null
+          publishing_result_id?: string | null
+          raw_response?: Json | null
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_analytics_publishing_result_id_fkey"
+            columns: ["publishing_result_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_results"
             referencedColumns: ["id"]
           },
         ]
@@ -412,6 +510,145 @@ export type Database = {
           },
         ]
       }
+      publishing_jobs: {
+        Row: {
+          caption_per_platform: Json
+          content_type: string
+          created_at: string | null
+          facebook_page_id: string | null
+          hashtags_per_platform: Json | null
+          id: string
+          last_error_message: string | null
+          linkedin_org_urn: string | null
+          max_retries: number | null
+          media_urls: string[] | null
+          pinterest_board_id: string | null
+          platforms: string[]
+          project_id: string | null
+          published_at: string | null
+          retry_count: number | null
+          scheduled_at: string | null
+          status: string
+          title: string | null
+          updated_at: string | null
+          upload_post_job_id: string | null
+          upload_post_request_id: string | null
+          user_id: string
+        }
+        Insert: {
+          caption_per_platform?: Json
+          content_type: string
+          created_at?: string | null
+          facebook_page_id?: string | null
+          hashtags_per_platform?: Json | null
+          id?: string
+          last_error_message?: string | null
+          linkedin_org_urn?: string | null
+          max_retries?: number | null
+          media_urls?: string[] | null
+          pinterest_board_id?: string | null
+          platforms: string[]
+          project_id?: string | null
+          published_at?: string | null
+          retry_count?: number | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string | null
+          upload_post_job_id?: string | null
+          upload_post_request_id?: string | null
+          user_id: string
+        }
+        Update: {
+          caption_per_platform?: Json
+          content_type?: string
+          created_at?: string | null
+          facebook_page_id?: string | null
+          hashtags_per_platform?: Json | null
+          id?: string
+          last_error_message?: string | null
+          linkedin_org_urn?: string | null
+          max_retries?: number | null
+          media_urls?: string[] | null
+          pinterest_board_id?: string | null
+          platforms?: string[]
+          project_id?: string | null
+          published_at?: string | null
+          retry_count?: number | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string | null
+          upload_post_job_id?: string | null
+          upload_post_request_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publishing_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publishing_results: {
+        Row: {
+          attempted_at: string | null
+          completed_at: string | null
+          created_at: string | null
+          error_code: string | null
+          error_is_retryable: boolean | null
+          error_message: string | null
+          id: string
+          job_id: string
+          platform: string
+          platform_post_id: string | null
+          post_url: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_code?: string | null
+          error_is_retryable?: boolean | null
+          error_message?: string | null
+          id?: string
+          job_id: string
+          platform: string
+          platform_post_id?: string | null
+          post_url?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_code?: string | null
+          error_is_retryable?: boolean | null
+          error_message?: string | null
+          id?: string
+          job_id?: string
+          platform?: string
+          platform_post_id?: string | null
+          post_url?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publishing_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       publishing_settings: {
         Row: {
           auto_publish_enabled: boolean | null
@@ -536,6 +773,108 @@ export type Database = {
           },
         ]
       }
+      social_accounts: {
+        Row: {
+          connected_at: string | null
+          connection_method: string
+          created_at: string | null
+          disconnected_at: string | null
+          facebook_page_id: string | null
+          facebook_page_name: string | null
+          id: string
+          is_connected: boolean | null
+          last_validated_at: string | null
+          last_validation_status: string | null
+          linkedin_org_name: string | null
+          linkedin_org_urn: string | null
+          pinterest_default_board_id: string | null
+          pinterest_default_board_name: string | null
+          platform: string
+          profile_display_name: string | null
+          updated_at: string | null
+          upload_post_username: string
+          user_id: string
+        }
+        Insert: {
+          connected_at?: string | null
+          connection_method?: string
+          created_at?: string | null
+          disconnected_at?: string | null
+          facebook_page_id?: string | null
+          facebook_page_name?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_validated_at?: string | null
+          last_validation_status?: string | null
+          linkedin_org_name?: string | null
+          linkedin_org_urn?: string | null
+          pinterest_default_board_id?: string | null
+          pinterest_default_board_name?: string | null
+          platform: string
+          profile_display_name?: string | null
+          updated_at?: string | null
+          upload_post_username: string
+          user_id: string
+        }
+        Update: {
+          connected_at?: string | null
+          connection_method?: string
+          created_at?: string | null
+          disconnected_at?: string | null
+          facebook_page_id?: string | null
+          facebook_page_name?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_validated_at?: string | null
+          last_validation_status?: string | null
+          linkedin_org_name?: string | null
+          linkedin_org_urn?: string | null
+          pinterest_default_board_id?: string | null
+          pinterest_default_board_name?: string | null
+          platform?: string
+          profile_display_name?: string | null
+          updated_at?: string | null
+          upload_post_username?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      upload_post_profiles: {
+        Row: {
+          connect_page_visited: boolean | null
+          created_at: string | null
+          id: string
+          last_jwt_expires_at: string | null
+          last_jwt_generated_at: string | null
+          profile_created_at_provider: string | null
+          updated_at: string | null
+          upload_post_username: string
+          user_id: string
+        }
+        Insert: {
+          connect_page_visited?: boolean | null
+          created_at?: string | null
+          id?: string
+          last_jwt_expires_at?: string | null
+          last_jwt_generated_at?: string | null
+          profile_created_at_provider?: string | null
+          updated_at?: string | null
+          upload_post_username: string
+          user_id: string
+        }
+        Update: {
+          connect_page_visited?: boolean | null
+          created_at?: string | null
+          id?: string
+          last_jwt_expires_at?: string | null
+          last_jwt_generated_at?: string | null
+          profile_created_at_provider?: string | null
+          updated_at?: string | null
+          upload_post_username?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_api_keys: {
         Row: {
           created_at: string | null
@@ -623,6 +962,50 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_events: {
+        Row: {
+          event_type: string
+          id: string
+          job_id: string | null
+          processed: boolean | null
+          processed_at: string | null
+          processing_error: string | null
+          provider_event_id: string | null
+          raw_payload: Json
+          received_at: string | null
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          job_id?: string | null
+          processed?: boolean | null
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_event_id?: string | null
+          raw_payload: Json
+          received_at?: string | null
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          job_id?: string | null
+          processed?: boolean | null
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_event_id?: string | null
+          raw_payload?: Json
+          received_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "publishing_jobs"
             referencedColumns: ["id"]
           },
         ]
