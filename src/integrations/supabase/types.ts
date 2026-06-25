@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_link_clicks: {
+        Row: {
+          clicked_at: string | null
+          id: string
+          provider: string
+          source_location: string | null
+          user_id: string | null
+        }
+        Insert: {
+          clicked_at?: string | null
+          id?: string
+          provider: string
+          source_location?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          clicked_at?: string | null
+          id?: string
+          provider?: string
+          source_location?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_link_clicks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analyses: {
         Row: {
           created_at: string | null
@@ -219,43 +251,58 @@ export type Database = {
           analyses_limit: number | null
           analyses_used: number | null
           avatar_url: string | null
+          country: string | null
           created_at: string | null
           default_niche: string | null
           full_name: string | null
           id: string
+          language: string | null
+          last_login_at: string | null
           plan: Database["public"]["Enums"]["plan_type"] | null
           role: Database["public"]["Enums"]["app_role"] | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          timezone: string | null
           updated_at: string | null
+          workspace_name: string | null
         }
         Insert: {
           analyses_limit?: number | null
           analyses_used?: number | null
           avatar_url?: string | null
+          country?: string | null
           created_at?: string | null
           default_niche?: string | null
           full_name?: string | null
           id: string
+          language?: string | null
+          last_login_at?: string | null
           plan?: Database["public"]["Enums"]["plan_type"] | null
           role?: Database["public"]["Enums"]["app_role"] | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          timezone?: string | null
           updated_at?: string | null
+          workspace_name?: string | null
         }
         Update: {
           analyses_limit?: number | null
           analyses_used?: number | null
           avatar_url?: string | null
+          country?: string | null
           created_at?: string | null
           default_niche?: string | null
           full_name?: string | null
           id?: string
+          language?: string | null
+          last_login_at?: string | null
           plan?: Database["public"]["Enums"]["plan_type"] | null
           role?: Database["public"]["Enums"]["app_role"] | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          timezone?: string | null
           updated_at?: string | null
+          workspace_name?: string | null
         }
         Relationships: []
       }
@@ -365,6 +412,88 @@ export type Database = {
           },
         ]
       }
+      publishing_settings: {
+        Row: {
+          auto_publish_enabled: boolean | null
+          caption_preference: string | null
+          default_cta: string | null
+          default_platforms: string[] | null
+          default_post_times: Json | null
+          default_scheduling_mode: string | null
+          hashtag_preference: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_publish_enabled?: boolean | null
+          caption_preference?: string | null
+          default_cta?: string | null
+          default_platforms?: string[] | null
+          default_post_times?: Json | null
+          default_scheduling_mode?: string | null
+          hashtag_preference?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_publish_enabled?: boolean | null
+          caption_preference?: string | null
+          default_cta?: string | null
+          default_platforms?: string[] | null
+          default_post_times?: Json | null
+          default_scheduling_mode?: string | null
+          hashtag_preference?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publishing_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publishing_templates: {
+        Row: {
+          caption_template: string | null
+          created_at: string | null
+          hashtag_set: string[] | null
+          id: string
+          name: string
+          platforms: string[] | null
+          user_id: string
+        }
+        Insert: {
+          caption_template?: string | null
+          created_at?: string | null
+          hashtag_set?: string[] | null
+          id?: string
+          name: string
+          platforms?: string[] | null
+          user_id: string
+        }
+        Update: {
+          caption_template?: string | null
+          created_at?: string | null
+          hashtag_set?: string[] | null
+          id?: string
+          name?: string
+          platforms?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publishing_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_projects: {
         Row: {
           analysis_id: string
@@ -402,6 +531,97 @@ export type Database = {
             foreignKeyName: "saved_projects_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_api_keys: {
+        Row: {
+          created_at: string | null
+          encrypted_key: string
+          id: string
+          key_last_four: string | null
+          last_validated_at: string | null
+          last_validation_error: string | null
+          metadata: Json | null
+          provider: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          encrypted_key: string
+          id?: string
+          key_last_four?: string | null
+          last_validated_at?: string | null
+          last_validation_error?: string | null
+          metadata?: Json | null
+          provider: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          encrypted_key?: string
+          id?: string
+          key_last_four?: string | null
+          last_validated_at?: string | null
+          last_validation_error?: string | null
+          metadata?: Json | null
+          provider?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_api_keys_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_preferences: {
+        Row: {
+          default_caption_style: string | null
+          default_language: string | null
+          default_platform: string | null
+          default_reel_style: string | null
+          default_voice_id: string | null
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          default_caption_style?: string | null
+          default_language?: string | null
+          default_platform?: string | null
+          default_reel_style?: string | null
+          default_voice_id?: string | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          default_caption_style?: string | null
+          default_language?: string | null
+          default_platform?: string | null
+          default_reel_style?: string | null
+          default_voice_id?: string | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
