@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Plus, RefreshCw, ExternalLink, Check } from "lucide-react";
+import { Loader2, Plus, RefreshCw, ExternalLink, Check, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,8 @@ import {
   resolvePublishingError,
   type PublishingPlatform,
 } from "@/lib/upload-post/shared";
+import { HelpDrawer } from "@/components/settings/HelpDrawer";
+import { PLATFORM_HELP, UPLOAD_POST_HELP } from "@/components/settings/helpContent";
 
 interface Account {
   platform: string;
@@ -61,6 +63,7 @@ export function ConnectedAccountsTab({
   const [selectorOptions, setSelectorOptions] = useState<{ id: string; name: string }[]>([]);
   const [selectorLoading, setSelectorLoading] = useState(false);
   const [savingSelector, setSavingSelector] = useState<string | null>(null);
+  const [helpKey, setHelpKey] = useState<string | null>(null);
 
   const byPlatform = (p: string) => accounts.find((a) => a.platform === p);
 
@@ -183,6 +186,14 @@ export function ConnectedAccountsTab({
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setHelpKey("__overview__")}
+            aria-label="How to connect accounts"
+          >
+            <HelpCircle className="mr-1.5 h-3.5 w-3.5" /> How it works
+          </Button>
           <Button variant="outline" size="sm" onClick={() => sync()} disabled={syncing}>
             <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} /> Refresh
           </Button>
@@ -237,6 +248,14 @@ export function ConnectedAccountsTab({
                     : "Link this account to publish to it"}
                 </p>
               </div>
+              <button
+                onClick={() => setHelpKey(p)}
+                className="rounded-full p-1.5 text-muted-foreground hover:bg-accent transition-colors"
+                aria-label={`How to connect ${meta.label}`}
+                title={`How to connect ${meta.label}`}
+              >
+                <HelpCircle className="h-4 w-4" />
+              </button>
               {connected && caps.requiresSelector ? (
                 <Button
                   variant="outline"
@@ -318,6 +337,18 @@ export function ConnectedAccountsTab({
           )}
         </DialogContent>
       </Dialog>
+
+      <HelpDrawer
+        open={!!helpKey}
+        onClose={() => setHelpKey(null)}
+        content={
+          helpKey === "__overview__"
+            ? UPLOAD_POST_HELP
+            : helpKey
+              ? (PLATFORM_HELP[helpKey] ?? null)
+              : null
+        }
+      />
     </div>
   );
 }
