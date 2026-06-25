@@ -14,12 +14,14 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedPublishingRouteImport } from './routes/_authenticated/publishing'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedStudioIndexRouteImport } from './routes/_authenticated/studio.index'
+import { Route as ApiPublicUploadPostWebhookRouteImport } from './routes/api/public/upload-post-webhook'
 import { Route as ApiPublicImgRouteImport } from './routes/api/public/img'
 import { Route as AuthenticatedStudioVoiceoverRouteImport } from './routes/_authenticated/studio.voiceover'
 import { Route as AuthenticatedStudioReelRouteImport } from './routes/_authenticated/studio.reel'
@@ -48,6 +50,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPublishingRoute = AuthenticatedPublishingRouteImport.update({
+  id: '/publishing',
+  path: '/publishing',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
@@ -80,6 +87,12 @@ const AuthenticatedStudioIndexRoute =
     id: '/studio/',
     path: '/studio/',
     getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const ApiPublicUploadPostWebhookRoute =
+  ApiPublicUploadPostWebhookRouteImport.update({
+    id: '/api/public/upload-post-webhook',
+    path: '/api/public/upload-post-webhook',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicImgRoute = ApiPublicImgRouteImport.update({
   id: '/api/public/img',
@@ -119,12 +132,14 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/projects': typeof AuthenticatedProjectsRoute
+  '/publishing': typeof AuthenticatedPublishingRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/studio/carousel': typeof AuthenticatedStudioCarouselRoute
   '/studio/image': typeof AuthenticatedStudioImageRoute
   '/studio/reel': typeof AuthenticatedStudioReelRoute
   '/studio/voiceover': typeof AuthenticatedStudioVoiceoverRoute
   '/api/public/img': typeof ApiPublicImgRoute
+  '/api/public/upload-post-webhook': typeof ApiPublicUploadPostWebhookRoute
   '/studio/': typeof AuthenticatedStudioIndexRoute
 }
 export interface FileRoutesByTo {
@@ -136,12 +151,14 @@ export interface FileRoutesByTo {
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/projects': typeof AuthenticatedProjectsRoute
+  '/publishing': typeof AuthenticatedPublishingRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/studio/carousel': typeof AuthenticatedStudioCarouselRoute
   '/studio/image': typeof AuthenticatedStudioImageRoute
   '/studio/reel': typeof AuthenticatedStudioReelRoute
   '/studio/voiceover': typeof AuthenticatedStudioVoiceoverRoute
   '/api/public/img': typeof ApiPublicImgRoute
+  '/api/public/upload-post-webhook': typeof ApiPublicUploadPostWebhookRoute
   '/studio': typeof AuthenticatedStudioIndexRoute
 }
 export interface FileRoutesById {
@@ -155,12 +172,14 @@ export interface FileRoutesById {
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
+  '/_authenticated/publishing': typeof AuthenticatedPublishingRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/studio/carousel': typeof AuthenticatedStudioCarouselRoute
   '/_authenticated/studio/image': typeof AuthenticatedStudioImageRoute
   '/_authenticated/studio/reel': typeof AuthenticatedStudioReelRoute
   '/_authenticated/studio/voiceover': typeof AuthenticatedStudioVoiceoverRoute
   '/api/public/img': typeof ApiPublicImgRoute
+  '/api/public/upload-post-webhook': typeof ApiPublicUploadPostWebhookRoute
   '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute
 }
 export interface FileRouteTypes {
@@ -174,12 +193,14 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/dashboard'
     | '/projects'
+    | '/publishing'
     | '/settings'
     | '/studio/carousel'
     | '/studio/image'
     | '/studio/reel'
     | '/studio/voiceover'
     | '/api/public/img'
+    | '/api/public/upload-post-webhook'
     | '/studio/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -191,12 +212,14 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/dashboard'
     | '/projects'
+    | '/publishing'
     | '/settings'
     | '/studio/carousel'
     | '/studio/image'
     | '/studio/reel'
     | '/studio/voiceover'
     | '/api/public/img'
+    | '/api/public/upload-post-webhook'
     | '/studio'
   id:
     | '__root__'
@@ -209,12 +232,14 @@ export interface FileRouteTypes {
     | '/_authenticated/calendar'
     | '/_authenticated/dashboard'
     | '/_authenticated/projects'
+    | '/_authenticated/publishing'
     | '/_authenticated/settings'
     | '/_authenticated/studio/carousel'
     | '/_authenticated/studio/image'
     | '/_authenticated/studio/reel'
     | '/_authenticated/studio/voiceover'
     | '/api/public/img'
+    | '/api/public/upload-post-webhook'
     | '/_authenticated/studio/'
   fileRoutesById: FileRoutesById
 }
@@ -224,6 +249,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiPublicImgRoute: typeof ApiPublicImgRoute
+  ApiPublicUploadPostWebhookRoute: typeof ApiPublicUploadPostWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -261,6 +287,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/publishing': {
+      id: '/_authenticated/publishing'
+      path: '/publishing'
+      fullPath: '/publishing'
+      preLoaderRoute: typeof AuthenticatedPublishingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/projects': {
@@ -304,6 +337,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/studio/'
       preLoaderRoute: typeof AuthenticatedStudioIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/api/public/upload-post-webhook': {
+      id: '/api/public/upload-post-webhook'
+      path: '/api/public/upload-post-webhook'
+      fullPath: '/api/public/upload-post-webhook'
+      preLoaderRoute: typeof ApiPublicUploadPostWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/img': {
       id: '/api/public/img'
@@ -349,6 +389,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
+  AuthenticatedPublishingRoute: typeof AuthenticatedPublishingRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStudioCarouselRoute: typeof AuthenticatedStudioCarouselRoute
   AuthenticatedStudioImageRoute: typeof AuthenticatedStudioImageRoute
@@ -363,6 +404,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
+  AuthenticatedPublishingRoute: AuthenticatedPublishingRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStudioCarouselRoute: AuthenticatedStudioCarouselRoute,
   AuthenticatedStudioImageRoute: AuthenticatedStudioImageRoute,
@@ -381,6 +423,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiPublicImgRoute: ApiPublicImgRoute,
+  ApiPublicUploadPostWebhookRoute: ApiPublicUploadPostWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
